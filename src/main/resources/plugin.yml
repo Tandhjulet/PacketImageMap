@@ -1,0 +1,8 @@
+name: PacketImage
+main: dk.tandhjulet.image.PacketImage
+version: ${project.version}
+
+commands:
+  setmap:
+    description: Create a image map display
+    usage: "Usage: /setmap <image file name>.<extension> - Names are slugified so that every space becomes an underscore (_)"
