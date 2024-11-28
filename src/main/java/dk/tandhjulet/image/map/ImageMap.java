@@ -23,7 +23,10 @@ public class ImageMap {
 	public static final short MAP_WIDTH = 128;
 	public static final short MAP_HEIGHT = 128;
 
+	@Getter
 	private final BufferedImage image;
+	@Getter
+	boolean hasFlushedImage = false;
 
 	int origWidth, origHeight;
 
@@ -61,6 +64,9 @@ public class ImageMap {
 	}
 
 	public BufferedImage[] splitImages() {
+		if (hasFlushedImage)
+			return cutImages;
+
 		cutImages = new BufferedImage[height * width];
 
 		Bukkit.getLogger().info("Length: " + cutImages.length + " width: " + width + " height: " + height);
@@ -75,6 +81,8 @@ public class ImageMap {
 			imageY += 128;
 		}
 
+		hasFlushedImage = true;
+		image.flush();
 		return cutImages;
 	}
 
@@ -161,7 +169,6 @@ public class ImageMap {
 				return;
 
 			canvas.drawImage(0, 0, cutImages[cutImageIndex]);
-			cutImages[cutImageIndex] = null;
 		}
 	}
 }
