@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import dk.tandhjulet.image.commands.CommandSetMap;
+import dk.tandhjulet.image.listeners.InteractListener;
 import dk.tandhjulet.image.map.MapManager;
 import lombok.Getter;
 
@@ -23,6 +24,8 @@ public class PacketImage extends JavaPlugin {
 			Bukkit.getLogger().severe("Failed to load MapManager.");
 			e.printStackTrace();
 		}
+
 		CommandSetMap.register();
+		InteractListener.register();
 	}
 }

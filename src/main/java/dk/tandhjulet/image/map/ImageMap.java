@@ -17,6 +17,7 @@ import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 
 import dk.tandhjulet.image.PacketImage;
+import dk.tandhjulet.image.utils.LocationUtils;
 import lombok.Getter;
 
 public class ImageMap {
@@ -69,7 +70,8 @@ public class ImageMap {
 
 		cutImages = new BufferedImage[height * width];
 
-		Bukkit.getLogger().info("Length: " + cutImages.length + " width: " + width + " height: " + height);
+		// Bukkit.getLogger().info("Length: " + cutImages.length + " width: " + width +
+		// " height: " + height);
 
 		int imageY = insertY;
 		for (int y = 0; y < height; y++) {
@@ -100,12 +102,9 @@ public class ImageMap {
 
 		location.setYaw(0);
 		location.setPitch(0);
-		location.setY(Math.floor(location.getY()));
-		location.setX(Math.floor(location.getX()));
+		LocationUtils.floorDecimals(location);
 
 		Location centerLocation = location.clone().add(width / 2, height / 2, 0);
-		Bukkit.getLogger()
-				.info("x: " + centerLocation.getX() + " y: " + centerLocation.getY() + " z: " + centerLocation.getZ());
 
 		Collection<Entity> entities = world.getNearbyEntities(centerLocation, width / 2 + 1, height / 2 + 1, 1);
 
