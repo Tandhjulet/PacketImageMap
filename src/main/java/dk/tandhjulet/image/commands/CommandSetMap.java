@@ -1,6 +1,7 @@
 package dk.tandhjulet.image.commands;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -9,9 +10,8 @@ import org.bukkit.entity.Player;
 
 import dk.tandhjulet.image.map.ImageMap;
 import dk.tandhjulet.image.map.MapManager;
+import dk.tandhjulet.image.objects.Axis;
 import dk.tandhjulet.image.objects.PlacementMetadata;
-import dk.tandhjulet.image.utils.BlockUtils;
-import dk.tandhjulet.image.utils.LocationUtils;
 
 public class CommandSetMap implements CommandExecutor {
 
@@ -35,36 +35,30 @@ public class CommandSetMap implements CommandExecutor {
 			player.sendMessage("Please right click on the two points using a stick.");
 			player.sendMessage("When you finished selecting the display area, run this command again.");
 			return true;
-		}
-
-		else if (placement.getPos1() == null || placement.getPos2() == null) {
+		} else if (placement.getPos1() == null || placement.getPos2() == null) {
 			player.sendMessage("Please select both corner points.");
 			return true;
 		}
 
-		else if (!LocationUtils.isAxisAligned(placement.getPos1(), placement.getPos2())) {
+		Axis axis = Axis.getAxisAlignment(placement.getPos1(), placement.getPos2());
+		if (axis == Axis.MULT) {
 			player.sendMessage("Your selection has a depth greater than one.");
 			player.sendMessage("Please redefine your selection.");
 			return true;
 		}
 
 		ImageMap map = MapManager.getImageMaps().get(args[0]);
+		if (!map.isSafeToCreate(placement.getPos1(), placement.getPos2(), axis, true)) {
+			player.sendMessage("Please ensure that there are no blocks in the way and that the back wall is filled.");
+			return true;
+		}
+
+		placement.getPos1().getBlock().setType(Material.AIR);
+		placement.getPos2().getBlock().setType(Material.AIR);
+
 		if (map.render(placement.getPos1())) {
 			player.sendMessage("Successfully placed image map.");
-
-			PlacementMetadata removed = PlacementMetadata.remove(player);
-			if (removed == null)
-				return true;
-
-			try {
-				BlockUtils.sendBlockUpdate(player, removed.getPos1().getBlock(), removed.getPos1());
-				BlockUtils.sendBlockUpdate(player, removed.getPos2().getBlock(), removed.getPos2());
-			} catch (IllegalArgumentException | IllegalAccessException e) {
-				player.sendMessage(
-						"Placement indication blocks not removed? Please relog. View logs for more information.");
-				e.printStackTrace();
-			}
-
+			PlacementMetadata.remove(player);
 		} else {
 			player.sendMessage("An error occured.");
 		}

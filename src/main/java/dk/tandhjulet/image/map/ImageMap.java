@@ -2,9 +2,11 @@ package dk.tandhjulet.image.map;
 
 import java.awt.image.BufferedImage;
 import java.util.Collection;
+import java.util.Iterator;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
@@ -17,6 +19,8 @@ import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 
 import dk.tandhjulet.image.PacketImage;
+import dk.tandhjulet.image.objects.Axis;
+import dk.tandhjulet.image.utils.FastCuboidIterator;
 import dk.tandhjulet.image.utils.LocationUtils;
 import lombok.Getter;
 
@@ -33,7 +37,7 @@ public class ImageMap {
 
 	@Getter
 	int width, height;
-	int insertX, insertY = 0;
+	int insertX = 0, insertY = 0;
 
 	BufferedImage[] cutImages = null;
 
@@ -100,13 +104,11 @@ public class ImageMap {
 			return false;
 		World world = location.getWorld();
 
-		location.setYaw(0);
-		location.setPitch(0);
 		LocationUtils.floorDecimals(location);
 
 		Location centerLocation = location.clone().add(width / 2, height / 2, 0);
 
-		Collection<Entity> entities = world.getNearbyEntities(centerLocation, width / 2 + 1, height / 2 + 1, 1);
+		Collection<Entity> entities = world.getNearbyEntities(centerLocation, width / 2, height / 2, 1);
 
 		boolean itemFramePresent = false;
 		for (Entity entity : entities) {
@@ -151,6 +153,46 @@ public class ImageMap {
 		}, itemFramePresent ? 2L : 0L);
 
 		return true;
+	}
+
+	/**
+	 * Checks if the blocks that the maps need to be placed upon are empty, and they
+	 * have a wall that they can hang on.
+	 * 
+	 * @return boolean indicating whether it's safe to place the image map or not
+	 */
+	public boolean isSafeToCreate(Location pos1, Location pos2, Axis axis, boolean excludeMinAndMax) {
+		if (axis == Axis.MULT)
+			return false;
+
+		Iterator<Location> locationIterator = new FastCuboidIterator(pos1, pos2);
+		if (excludeMinAndMax)
+			locationIterator.next();
+
+		boolean isFilledOnRight = true,
+				isFilledOnLeft = true;
+
+		while (locationIterator.hasNext()) {
+			Location location = locationIterator.next();
+			if (excludeMinAndMax && location.equals(pos2))
+				continue;
+
+			if (location.getBlock().getType() != Material.AIR)
+				return false;
+
+			LocationUtils.setRelative(location, axis, 1);
+			if (location.getBlock().getType() == Material.AIR)
+				isFilledOnRight = false;
+
+			LocationUtils.setRelative(location, axis, -2);
+			if (location.getBlock().getType() == Material.AIR)
+				isFilledOnLeft = false;
+
+			if (!isFilledOnLeft && !isFilledOnRight)
+				return false;
+		}
+
+		return isFilledOnRight || isFilledOnLeft;
 	}
 
 	public class ImageRenderer extends MapRenderer {

@@ -3,11 +3,11 @@ package dk.tandhjulet.image.listeners;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
 import dk.tandhjulet.image.PacketImage;
@@ -18,53 +18,46 @@ import dk.tandhjulet.image.utils.LocationUtils;
 public class InteractListener implements Listener {
 
 	@EventHandler
-	public void onPlayerInteract(PlayerInteractEntityEvent e) {
+	public void onInteract(PlayerInteractEvent e) {
 		Player player = e.getPlayer();
 		if (!player.isOp())
 			return;
 		else if (player.getItemInHand().getType() != Material.STICK)
 			return;
-		e.setCancelled(true);
+		else if (e.getAction() != Action.LEFT_CLICK_BLOCK && e.getAction() != Action.RIGHT_CLICK_BLOCK)
+			return;
 
-		Entity entity = e.getRightClicked();
 		PlacementMetadata metadata = PlacementMetadata.get(player);
 		if (metadata != PlacementMetadata.ACTIVE)
 			return;
 
-		Location location = entity.getLocation().clone();
-		LocationUtils.floorDecimals(location);
+		e.setCancelled(true);
 
-		if (location.equals(metadata.getPos1()) || location.equals(metadata.getPos2())) {
-			try {
-				BlockUtils.sendBlockUpdate(player, location.getBlock(), location);
-			} catch (IllegalArgumentException | IllegalAccessException e1) {
-				// Pretty bare bones, but hey. Let's hope that the function doesn't error out.
-				// After all, this plugin is only designed to support 1.8, so support for other
-				// versions should not be a guarantee.
-				player.sendMessage("Removed position at " + location.toString());
-			}
-
-			if (location.equals(metadata.getPos1())) {
-				metadata.setPos1(null);
-			} else {
-				metadata.setPos2(null);
-			}
-			return;
-		}
-
-		final ItemStack block;
-		if (metadata.getPos1() == null) {
-			block = new ItemStack(Material.EMERALD_BLOCK);
+		Location location = e.getClickedBlock().getLocation().clone();
+		if (e.getAction() == Action.LEFT_CLICK_BLOCK) {
+			updatePoint(player, location, metadata.getPos1(), new ItemStack(Material.EMERALD_BLOCK));
 			metadata.setPos1(location);
+			player.sendMessage("Set pos1");
 		} else {
-			block = new ItemStack(Material.REDSTONE_BLOCK);
+			updatePoint(player, location, metadata.getPos2(), new ItemStack(Material.REDSTONE_BLOCK));
 			metadata.setPos2(location);
+			player.sendMessage("Set pos2");
 		}
+	}
+
+	private static void updatePoint(Player player, Location newPoint, Location oldPoint, ItemStack displayBlock) {
+		if (oldPoint != null) {
+			try {
+				BlockUtils.sendBlockUpdate(player, oldPoint.getBlock(), oldPoint, false);
+			} catch (IllegalArgumentException | IllegalAccessException exception) {
+			}
+		}
+
+		LocationUtils.floorDecimals(newPoint);
 
 		try {
-			BlockUtils.sendBlockUpdate(player, block, entity.getLocation());
-		} catch (IllegalArgumentException | IllegalAccessException e1) {
-			player.sendMessage("Set point at " + location);
+			BlockUtils.sendBlockUpdate(player, displayBlock, newPoint, true);
+		} catch (IllegalArgumentException | IllegalAccessException exception) {
 		}
 	}
 
