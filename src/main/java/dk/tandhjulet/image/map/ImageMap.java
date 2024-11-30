@@ -2,13 +2,13 @@ package dk.tandhjulet.image.map;
 
 import java.awt.image.BufferedImage;
 import java.util.Collection;
-import java.util.Iterator;
+
+import javax.annotation.Nullable;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
@@ -17,10 +17,12 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
+import org.bukkit.util.Vector;
 
 import dk.tandhjulet.image.PacketImage;
 import dk.tandhjulet.image.objects.Axis;
-import dk.tandhjulet.image.utils.FastCuboidIterator;
+import dk.tandhjulet.image.objects.Direction;
+import dk.tandhjulet.image.utils.CuboidRegion;
 import dk.tandhjulet.image.utils.LocationUtils;
 import lombok.Getter;
 
@@ -42,9 +44,20 @@ public class ImageMap {
 	BufferedImage[] cutImages = null;
 
 	public ImageMap(BufferedImage image) {
-
 		this.image = image;
 		calculateImageDimensions();
+	}
+
+	public Location getMax(Location min, Axis axis) {
+		Location max = min.clone();
+		if (axis != Axis.Z) {
+			max.setX(min.getX() + getWidth() - 1);
+		}
+		if (axis != Axis.X) {
+			max.setZ(min.getZ() + getWidth() - 1);
+		}
+		max.setY(min.getY() + getHeight() - 1);
+		return max;
 	}
 
 	public void calculateImageDimensions() {
@@ -74,8 +87,8 @@ public class ImageMap {
 
 		cutImages = new BufferedImage[height * width];
 
-		// Bukkit.getLogger().info("Length: " + cutImages.length + " width: " + width +
-		// " height: " + height);
+		Bukkit.getLogger().info("Length: " + cutImages.length + " width: " + width +
+				" height: " + height);
 
 		int imageY = insertY;
 		for (int y = 0; y < height; y++) {
@@ -98,14 +111,13 @@ public class ImageMap {
 		return subImage;
 	}
 
-	public boolean render(Location location) {
+	public boolean render(Location location, Direction frameDirection) {
 		splitImages();
 		if (cutImages.length == 0)
 			return false;
 		World world = location.getWorld();
 
 		LocationUtils.floorDecimals(location);
-
 		Location centerLocation = location.clone().add(width / 2, height / 2, 0);
 
 		Collection<Entity> entities = world.getNearbyEntities(centerLocation, width / 2, height / 2, 1);
@@ -119,32 +131,31 @@ public class ImageMap {
 		}
 
 		Bukkit.getScheduler().runTaskLater(PacketImage.getInstance(), () -> {
-			for (int y = 0; y < height; y++) {
-				for (int x = 0; x < width; x++) {
-					MapView view = Bukkit.createMap(world);
-					view.setWorld(world);
+			CuboidRegion region = new CuboidRegion(location, getMax(location, frameDirection.getAxis()));
+			Vector minPoint = region.getMin();
 
-					for (MapRenderer renderer : view.getRenderers()) {
-						view.removeRenderer(renderer);
-					}
+			region.forEachLocation((loc) -> {
+				int id = (loc.getBlockY() - minPoint.getBlockY()) * Math.max(height, width);
+				if (frameDirection.getAxis() == Axis.X)
+					id += loc.getBlockX() - minPoint.getBlockX();
+				else
+					id += loc.getBlockZ() - minPoint.getBlockZ();
 
-					ImageRenderer imageRenderer = new ImageRenderer(y * Math.max(height, width) + x);
-					view.addRenderer(imageRenderer);
+				MapView view = Bukkit.createMap(world);
+				view.setWorld(world);
 
-					ItemStack item = MapManager.createMap(view);
-					Location relLoc = location.clone().add(x, height - y - 1, 0);
-
-					// Bukkit.getLogger()
-					// .info("x: " + relLoc.getX() + " y: " + relLoc.getY() + " z: " + relLoc.getZ()
-					// + " using id: " + (y * Math.max(height, width) + x));
-
-					// Spawn item frame
-
-					ItemFrame itemFrame = (ItemFrame) world.spawnEntity(relLoc, EntityType.ITEM_FRAME);
-					itemFrame.setItem(item);
-					itemFrame.setFacingDirection(BlockFace.SOUTH);
+				for (MapRenderer renderer : view.getRenderers()) {
+					view.removeRenderer(renderer);
 				}
-			}
+
+				ImageRenderer imageRenderer = new ImageRenderer(id);
+				view.addRenderer(imageRenderer);
+
+				ItemStack item = MapManager.createMap(view);
+				ItemFrame itemFrame = (ItemFrame) world.spawnEntity(loc, EntityType.ITEM_FRAME);
+				itemFrame.setItem(item);
+				itemFrame.setFacingDirection(frameDirection.getBlockFace());
+			});
 
 			// Need to wait two ticks if item frames are present:
 			// When marked for removal, it takes a tick before theyre actually removed.
@@ -155,44 +166,43 @@ public class ImageMap {
 		return true;
 	}
 
-	/**
-	 * Checks if the blocks that the maps need to be placed upon are empty, and they
-	 * have a wall that they can hang on.
-	 * 
-	 * @return boolean indicating whether it's safe to place the image map or not
-	 */
-	public boolean isSafeToCreate(Location pos1, Location pos2, Axis axis, boolean excludeMinAndMax) {
+	@Nullable
+	public Direction getFrameDirection(Location pos1, Location pos2, Axis axis, boolean excludeMinAndMax) {
 		if (axis == Axis.MULT)
-			return false;
-
-		Iterator<Location> locationIterator = new FastCuboidIterator(pos1, pos2);
-		if (excludeMinAndMax)
-			locationIterator.next();
+			return null;
 
 		boolean isFilledOnRight = true,
 				isFilledOnLeft = true;
 
-		while (locationIterator.hasNext()) {
-			Location location = locationIterator.next();
-			if (excludeMinAndMax && location.equals(pos2))
-				continue;
+		CuboidRegion region = new CuboidRegion(pos1, pos2);
+		for (int x = region.getMinX(); x <= region.getMaxX(); x++) {
+			for (int y = region.getMinY(); y <= region.getMaxY(); y++) {
+				for (int z = region.getMinZ(); z <= region.getMaxZ(); z++) {
+					Location loc = new Location(pos1.getWorld(), x, y, z);
+					if (excludeMinAndMax && (loc.equals(pos1) || loc.equals(pos2)))
+						continue;
+					Material material = loc.getBlock().getType();
 
-			if (location.getBlock().getType() != Material.AIR)
-				return false;
+					LocationUtils.setRelative(loc, axis, 1);
+					if (!loc.getBlock().getType().isSolid())
+						isFilledOnRight = false;
 
-			LocationUtils.setRelative(location, axis, 1);
-			if (location.getBlock().getType() == Material.AIR)
-				isFilledOnRight = false;
+					LocationUtils.setRelative(loc, axis, -2);
+					if (!loc.getBlock().getType().isSolid())
+						isFilledOnLeft = false;
 
-			LocationUtils.setRelative(location, axis, -2);
-			if (location.getBlock().getType() == Material.AIR)
-				isFilledOnLeft = false;
+					// Bukkit.getLogger().info(loc.toString() + " left: " + isFilledOnLeft + "
+					// right: " + isFilledOnRight + " material: " + material);
 
-			if (!isFilledOnLeft && !isFilledOnRight)
-				return false;
+					if (!isFilledOnLeft && !isFilledOnRight)
+						return null;
+					else if (material != Material.AIR)
+						return null;
+				}
+			}
 		}
 
-		return isFilledOnRight || isFilledOnLeft;
+		return axis.toDirection(isFilledOnLeft, isFilledOnRight);
 	}
 
 	public class ImageRenderer extends MapRenderer {

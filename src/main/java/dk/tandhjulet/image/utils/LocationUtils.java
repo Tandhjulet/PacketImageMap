@@ -16,11 +16,15 @@ public class LocationUtils {
 
 	public static void setRelative(Location toSet, Axis alongAxis, int relativeValue) {
 		if (alongAxis == Axis.X) {
-			toSet.add(relativeValue, 0, 0);
-		} else if (alongAxis == Axis.Z) {
 			toSet.add(0, 0, relativeValue);
+		} else if (alongAxis == Axis.Z) {
+			toSet.add(relativeValue, 0, 0);
 		} else if (alongAxis == Axis.MULT) {
 			toSet.add(relativeValue, 0, relativeValue);
 		}
+	}
+
+	public static String stringify(Location loc) {
+		return "x: " + loc.getBlockX() + " y: " + loc.getBlockY() + " z: " + loc.getBlockZ();
 	}
 }

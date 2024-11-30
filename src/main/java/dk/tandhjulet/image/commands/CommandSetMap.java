@@ -11,6 +11,7 @@ import org.bukkit.entity.Player;
 import dk.tandhjulet.image.map.ImageMap;
 import dk.tandhjulet.image.map.MapManager;
 import dk.tandhjulet.image.objects.Axis;
+import dk.tandhjulet.image.objects.Direction;
 import dk.tandhjulet.image.objects.PlacementMetadata;
 
 public class CommandSetMap implements CommandExecutor {
@@ -48,15 +49,17 @@ public class CommandSetMap implements CommandExecutor {
 		}
 
 		ImageMap map = MapManager.getImageMaps().get(args[0]);
-		if (!map.isSafeToCreate(placement.getPos1(), placement.getPos2(), axis, true)) {
+		Direction frameDirection = map.getFrameDirection(placement.getPos1(), placement.getPos2(), axis, true);
+		if (frameDirection == null) {
 			player.sendMessage("Please ensure that there are no blocks in the way and that the back wall is filled.");
 			return true;
 		}
+		Bukkit.getLogger().info(frameDirection.toString());
 
 		placement.getPos1().getBlock().setType(Material.AIR);
 		placement.getPos2().getBlock().setType(Material.AIR);
 
-		if (map.render(placement.getPos1())) {
+		if (map.render(placement.getPos1(), frameDirection)) {
 			player.sendMessage("Successfully placed image map.");
 			PlacementMetadata.remove(player);
 		} else {

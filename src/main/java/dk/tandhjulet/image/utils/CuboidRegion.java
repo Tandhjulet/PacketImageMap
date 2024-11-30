@@ -1,23 +1,24 @@
 package dk.tandhjulet.image.utils;
 
-import java.util.Iterator;
-import java.util.NoSuchElementException;
+import java.util.function.Consumer;
 
 import org.bukkit.Location;
 import org.bukkit.util.Vector;
 
-public class FastCuboidIterator implements Iterator<Location> {
+import lombok.Getter;
+
+public class CuboidRegion {
 
 	private final Location pos1, pos2;
 
+	@Getter
 	private final int maxX, maxY, maxZ;
-	private int nextX, nextY, nextZ;
+	@Getter
+	private final int minX, minY, minZ;
 
 	private Vector min, max;
 
-	private boolean hasNext = true;
-
-	public FastCuboidIterator(Location pos1, Location pos2) {
+	public CuboidRegion(Location pos1, Location pos2) {
 		if (pos1.getWorld() != pos2.getWorld())
 			throw new IllegalArgumentException("Positions are not in the same world");
 
@@ -30,9 +31,19 @@ public class FastCuboidIterator implements Iterator<Location> {
 		maxZ = max.getBlockZ();
 
 		min = getMin();
-		nextX = min.getBlockX();
-		nextY = min.getBlockY();
-		nextZ = min.getBlockZ();
+		minX = min.getBlockX();
+		minY = min.getBlockY();
+		minZ = min.getBlockZ();
+	}
+
+	public void forEachLocation(Consumer<Location> consumer) {
+		for (int x = minX; x <= maxX; x++) {
+			for (int y = minY; y <= maxY; y++) {
+				for (int z = minZ; z <= maxZ; z++) {
+					consumer.accept(new Location(pos1.getWorld(), x, y, z));
+				}
+			}
+		}
 	}
 
 	public Vector getMax() {
@@ -47,36 +58,5 @@ public class FastCuboidIterator implements Iterator<Location> {
 		int y = Math.min(pos1.getBlockY(), pos2.getBlockY());
 		int z = Math.min(pos1.getBlockZ(), pos2.getBlockZ());
 		return new Vector(x, y, z);
-	}
-
-	@Override
-	public boolean hasNext() {
-		return this.hasNext;
-	}
-
-	@Override
-	public Location next() {
-		if (!hasNext) {
-			throw new NoSuchElementException();
-		}
-
-		Location location = new Location(pos1.getWorld(), nextX, nextY, maxZ);
-		setNextLocation();
-
-		return location;
-	}
-
-	private void setNextLocation() {
-		if (++nextX <= maxX)
-			return;
-		nextX = getMin().getBlockX();
-
-		if (++nextY <= maxY)
-			return;
-		nextY = getMin().getBlockY();
-
-		if (++nextZ <= maxZ)
-			return;
-		hasNext = false;
 	}
 }
