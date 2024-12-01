@@ -27,4 +27,13 @@ public class LocationUtils {
 	public static String stringify(Location loc) {
 		return "x: " + loc.getBlockX() + " y: " + loc.getBlockY() + " z: " + loc.getBlockZ();
 	}
+
+	public static Location center(Location pos1, Location pos2) {
+		if (pos1.getWorld() != pos2.getWorld())
+			throw new IllegalArgumentException("Positions are not in the same world.");
+		int avgX = (pos1.getBlockX() + pos2.getBlockX()) / 2;
+		int avgY = (pos1.getBlockY() + pos2.getBlockY()) / 2;
+		int avgZ = (pos1.getBlockZ() + pos2.getBlockZ()) / 2;
+		return new Location(pos1.getWorld(), avgX, avgY, avgZ);
+	}
 }

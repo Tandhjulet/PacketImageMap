@@ -94,7 +94,8 @@ public class ImageMap {
 		for (int y = 0; y < height; y++) {
 			int imageX = insertX;
 			for (int x = 0; x < width; x++) {
-				cutImages[y * Math.max(height, width) + x] = createSubImageFromOriginal(imageX, imageY);
+				final int id = (height - y - 1) * Math.max(height, width) + (width - x - 1);
+				cutImages[id] = createSubImageFromOriginal(imageX, imageY);
 				imageX += 128;
 			}
 			imageY += 128;
@@ -111,16 +112,24 @@ public class ImageMap {
 		return subImage;
 	}
 
-	public boolean render(Location location, Direction frameDirection) {
+	public boolean renderUnsafely(Location pos1, Location pos2, Direction frameDirection) {
 		splitImages();
 		if (cutImages.length == 0)
 			return false;
-		World world = location.getWorld();
+		World world = pos1.getWorld();
 
-		LocationUtils.floorDecimals(location);
-		Location centerLocation = location.clone().add(width / 2, height / 2, 0);
+		LocationUtils.floorDecimals(pos1);
+		LocationUtils.floorDecimals(pos2);
+		Location centerLocation = LocationUtils.center(pos1, pos2);
 
-		Collection<Entity> entities = world.getNearbyEntities(centerLocation, width / 2, height / 2, 1);
+		Collection<Entity> entities;
+		if (frameDirection.getAxis() == Axis.X) {
+			entities = world.getNearbyEntities(centerLocation, width / 2, height / 2, 1);
+		} else if (frameDirection.getAxis() == Axis.Z) {
+			entities = world.getNearbyEntities(centerLocation, 1, height / 2, width / 2);
+		} else {
+			entities = world.getNearbyEntities(centerLocation, width / 2, height / 2, width / 2);
+		}
 
 		boolean itemFramePresent = false;
 		for (Entity entity : entities) {
@@ -131,7 +140,7 @@ public class ImageMap {
 		}
 
 		Bukkit.getScheduler().runTaskLater(PacketImage.getInstance(), () -> {
-			CuboidRegion region = new CuboidRegion(location, getMax(location, frameDirection.getAxis()));
+			CuboidRegion region = new CuboidRegion(pos1, pos2);
 			Vector minPoint = region.getMin();
 
 			region.forEachLocation((loc) -> {
