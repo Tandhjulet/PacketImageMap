@@ -1,5 +1,9 @@
 package dk.tandhjulet.image.commands;
 
+import java.util.LinkedList;
+import java.util.List;
+
+import org.apache.commons.lang3.EnumUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -13,6 +17,7 @@ import dk.tandhjulet.image.map.MapManager;
 import dk.tandhjulet.image.objects.Axis;
 import dk.tandhjulet.image.objects.Direction;
 import dk.tandhjulet.image.objects.PlacementMetadata;
+import dk.tandhjulet.image.transformer.Transformer;
 
 public class CommandSetMap implements CommandExecutor {
 
@@ -56,6 +61,10 @@ public class CommandSetMap implements CommandExecutor {
 		}
 		Bukkit.getLogger().info(frameDirection.toString());
 
+		parseTransformers(args).forEach((transformer) -> {
+			transformer.apply(map);
+		});
+
 		placement.getPos1().getBlock().setType(Material.AIR);
 		placement.getPos2().getBlock().setType(Material.AIR);
 
@@ -67,6 +76,19 @@ public class CommandSetMap implements CommandExecutor {
 		}
 
 		return true;
+	}
+
+	private List<Transformer> parseTransformers(String[] args) {
+		List<Transformer> toApply = new LinkedList<>();
+		for (String arg : args) {
+			boolean isValid = EnumUtils.isValidEnum(Transformer.class, arg);
+			if (!isValid)
+				continue;
+
+			Transformer transformer = Transformer.valueOf(arg);
+			toApply.add(transformer);
+		}
+		return toApply;
 	}
 
 	public static void register() {

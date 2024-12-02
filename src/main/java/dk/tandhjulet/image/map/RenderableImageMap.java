@@ -26,6 +26,7 @@ import dk.tandhjulet.image.utils.CuboidRegion;
 import dk.tandhjulet.image.utils.LocationUtils;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 
 public class RenderableImageMap {
 	public static final short MAP_WIDTH = 128;
@@ -34,12 +35,14 @@ public class RenderableImageMap {
 	@Getter
 	private final BufferedImage image;
 	@Getter
-	boolean hasFlushedImage = false;
+	boolean imagesSplit = false;
 
 	int origWidth, origHeight;
 
 	@Getter
 	int width, height;
+	@Setter
+	@Getter
 	int insertX = 0, insertY = 0;
 
 	BufferedImage[] cutImages = null;
@@ -47,6 +50,14 @@ public class RenderableImageMap {
 	public RenderableImageMap(BufferedImage image) {
 		this.image = image;
 		calculateImageDimensions();
+	}
+
+	public int getImageHeight() {
+		return image.getHeight();
+	}
+
+	public int getImageWidth() {
+		return image.getWidth();
 	}
 
 	public Location getMax(Location min, Axis axis) {
@@ -83,7 +94,7 @@ public class RenderableImageMap {
 	}
 
 	public BufferedImage[] splitImages(@NonNull Direction direction) {
-		if (hasFlushedImage)
+		if (imagesSplit)
 			return cutImages;
 
 		cutImages = new BufferedImage[height * width];
@@ -105,7 +116,7 @@ public class RenderableImageMap {
 			imageY += 128;
 		}
 
-		hasFlushedImage = true;
+		imagesSplit = true;
 		image.flush();
 		return cutImages;
 	}
