@@ -8,7 +8,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.entity.Player;
 
-import dk.tandhjulet.image.map.ImageMap;
+import dk.tandhjulet.image.map.RenderableImageMap;
 import dk.tandhjulet.image.map.MapManager;
 import dk.tandhjulet.image.objects.Axis;
 import dk.tandhjulet.image.objects.Direction;
@@ -48,7 +48,7 @@ public class CommandSetMap implements CommandExecutor {
 			return true;
 		}
 
-		ImageMap map = MapManager.getImageMaps().get(args[0]);
+		RenderableImageMap map = MapManager.getImageMaps().get(args[0]).getRenderable();
 		Direction frameDirection = map.getFrameDirection(placement.getPos1(), placement.getPos2(), axis, true);
 		if (frameDirection == null) {
 			player.sendMessage("Please ensure that there are no blocks in the way and that the back wall is filled.");
