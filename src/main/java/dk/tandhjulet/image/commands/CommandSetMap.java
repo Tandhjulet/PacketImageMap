@@ -33,10 +33,15 @@ public class CommandSetMap implements CommandExecutor {
 			return true;
 		}
 
+		if (!MapManager.getImageMaps().containsKey(args[0])) {
+			commandSender.sendMessage("Det billede eksisterer ikke.");
+			return true;
+		}
+
 		Player player = (Player) commandSender;
 		PlacementMetadata placement = PlacementMetadata.get(player);
 		if (placement == null) {
-			PlacementMetadata.set(player, PlacementMetadata.ACTIVE);
+			PlacementMetadata.create(player, args[0]);
 
 			player.sendMessage("Please right click on the two points using a stick.");
 			player.sendMessage("When you finished selecting the display area, run this command again.");
@@ -53,7 +58,7 @@ public class CommandSetMap implements CommandExecutor {
 			return true;
 		}
 
-		RenderableImageMap map = MapManager.getImageMaps().get(args[0]).getRenderable();
+		RenderableImageMap map = MapManager.getImageMaps().get(placement.getImageFileName()).getRenderable();
 		Direction frameDirection = map.getFrameDirection(placement.getPos1(), placement.getPos2(), axis, true);
 		if (frameDirection == null) {
 			player.sendMessage("Please ensure that there are no blocks in the way and that the back wall is filled.");

@@ -47,6 +47,9 @@ public class CuboidRegion {
 	}
 
 	public Vector getMax() {
+		if (max != null)
+			return max;
+
 		int x = Math.max(pos1.getBlockX(), pos2.getBlockX());
 		int y = Math.max(pos1.getBlockY(), pos2.getBlockY());
 		int z = Math.max(pos1.getBlockZ(), pos2.getBlockZ());
@@ -54,9 +57,31 @@ public class CuboidRegion {
 	}
 
 	public Vector getMin() {
+		if (min != null)
+			return min;
+
 		int x = Math.min(pos1.getBlockX(), pos2.getBlockX());
 		int y = Math.min(pos1.getBlockY(), pos2.getBlockY());
 		int z = Math.min(pos1.getBlockZ(), pos2.getBlockZ());
 		return new Vector(x, y, z);
+	}
+
+	/**
+	 * Gets the width of the current selection.
+	 * 
+	 * @return width along x or z axis. if selection is not axis aligned, -1 is
+	 *         returned.
+	 */
+	public int getWidth() {
+		int x = maxX - minX;
+		int z = maxZ - minZ;
+
+		if (x > 0 && z > 0)
+			return -1;
+		return x + z;
+	}
+
+	public int getHeight() {
+		return maxY - minY;
 	}
 }
