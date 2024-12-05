@@ -28,8 +28,8 @@ public class ImageMap {
 		this.undersized = (undersizedX || undersizedY);
 	}
 
-	public RenderableImageMap getRenderable() {
-		return new RenderableImageMap(cloneImage());
+	public RenderableImageMap getRenderable(int width, int height) {
+		return new RenderableImageMap(cloneImage(), this.width / width, this.height / height);
 	}
 
 	private BufferedImage cloneImage() {

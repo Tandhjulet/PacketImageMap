@@ -58,7 +58,7 @@ public class InteractListener implements Listener {
 
 		ImageMap map = MapManager.getImageMaps().get(metadata.getImageFileName());
 		String ratioMessage = String.format(
-				"Selected: %dx%d - Image Ratio: %dx%d.", region.getWidth(), region.getHeight(), map.getWidth(),
+				"Selected: %dx%d - Image ratio: %dx%d.", region.getWidth(), region.getHeight(), map.getWidth(),
 				map.getHeight());
 
 		if (map.hasSameDimensions(region.getWidth(), region.getHeight())) {

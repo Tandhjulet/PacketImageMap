@@ -40,6 +40,9 @@ public class RenderableImageMap {
 	int origWidth, origHeight;
 
 	@Getter
+	private final int scaleX, scaleY;
+
+	@Getter
 	int width, height;
 	@Setter
 	@Getter
@@ -47,8 +50,10 @@ public class RenderableImageMap {
 
 	BufferedImage[] cutImages = null;
 
-	public RenderableImageMap(BufferedImage image) {
+	public RenderableImageMap(BufferedImage image, int scaleX, int scaleY) {
 		this.image = image;
+		this.scaleX = scaleX;
+		this.scaleY = scaleY;
 		calculateImageDimensions();
 	}
 
@@ -73,8 +78,8 @@ public class RenderableImageMap {
 	}
 
 	public void calculateImageDimensions() {
-		origWidth = image.getWidth();
-		origHeight = image.getHeight();
+		origWidth = image.getWidth() * scaleX;
+		origHeight = image.getHeight() * scaleY;
 
 		int undersizedX = origWidth % MAP_WIDTH;
 		int undersizedY = origHeight % MAP_HEIGHT;
