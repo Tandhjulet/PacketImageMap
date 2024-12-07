@@ -62,13 +62,12 @@ public class CommandSetMap implements CommandExecutor {
 		CuboidRegion region = placement.getRegion();
 
 		RenderableImageMap map = MapManager.getImageMaps().get(placement.getImageFileName())
-				.getRenderable(region.getWidth(), region.getHeight());
+				.getRenderable(region);
 		Direction frameDirection = map.getFrameDirection(placement.getPos1(), placement.getPos2(), axis, true);
 		if (frameDirection == null) {
 			player.sendMessage("Please ensure that there are no blocks in the way and that the back wall is filled.");
 			return true;
 		}
-		Bukkit.getLogger().info(frameDirection.toString());
 
 		parseTransformers(args).forEach((transformer) -> {
 			transformer.apply(map);

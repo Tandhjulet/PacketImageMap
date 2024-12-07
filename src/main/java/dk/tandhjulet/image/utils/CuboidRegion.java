@@ -78,10 +78,10 @@ public class CuboidRegion {
 
 		if (x > 0 && z > 0)
 			return -1;
-		return x + z;
+		return x + z + 1;
 	}
 
 	public int getHeight() {
-		return maxY - minY;
+		return maxY - minY + 1;
 	}
 }

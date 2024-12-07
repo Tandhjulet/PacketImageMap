@@ -1,5 +1,7 @@
 package dk.tandhjulet.image.map;
 
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
 import java.util.Collection;
 
@@ -37,24 +39,50 @@ public class RenderableImageMap {
 	@Getter
 	boolean imagesSplit = false;
 
-	int origWidth, origHeight;
+	@Getter
+	private final int origWidth, origHeight;
+	@Getter
+	private final int scaledWidth, scaledHeight;
 
 	@Getter
-	private final int scaleX, scaleY;
+	private final double scaleX, scaleY;
 
 	@Getter
-	int width, height;
+	private final int width, height;
 	@Setter
 	@Getter
-	int insertX = 0, insertY = 0;
+	private int insertX = 0, insertY = 0;
 
 	BufferedImage[] cutImages = null;
 
-	public RenderableImageMap(BufferedImage image, int scaleX, int scaleY) {
-		this.image = image;
-		this.scaleX = scaleX;
-		this.scaleY = scaleY;
-		calculateImageDimensions();
+	public RenderableImageMap(BufferedImage image, CuboidRegion region) {
+		origWidth = image.getWidth();
+		origHeight = image.getHeight();
+
+		height = region.getHeight();
+		width = region.getWidth();
+
+		double mapsNeededX = Math.ceil((double) origWidth / MAP_WIDTH);
+		double mapsNeededY = Math.ceil((double) origHeight / MAP_HEIGHT);
+
+		this.scaleX = region.getWidth() / mapsNeededX;
+		this.scaleY = region.getHeight() / mapsNeededY;
+
+		// Bukkit.getLogger().info("Maps needed " + mapsNeededX + " x " + mapsNeededY);
+		// Bukkit.getLogger().info("Scaled up by " + scaleX + " x " + scaleY);
+
+		scaledWidth = (int) Math.floor(image.getWidth() * scaleX);
+		scaledHeight = (int) Math.floor(image.getHeight() * scaleY);
+
+		insertX = -(width * MAP_WIDTH - scaledWidth) / 2;
+		insertY = -(height * MAP_HEIGHT - scaledHeight) / 2;
+
+		AffineTransform transform = new AffineTransform();
+		transform.scale(scaleX, scaleY);
+		AffineTransformOp scaleOperation = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR);
+
+		BufferedImage scaledImage = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
+		this.image = scaleOperation.filter(image, scaledImage);
 	}
 
 	public int getImageHeight() {
@@ -77,35 +105,14 @@ public class RenderableImageMap {
 		return max;
 	}
 
-	public void calculateImageDimensions() {
-		origWidth = image.getWidth() * scaleX;
-		origHeight = image.getHeight() * scaleY;
-
-		int undersizedX = origWidth % MAP_WIDTH;
-		int undersizedY = origHeight % MAP_HEIGHT;
-
-		width = (int) Math.ceil(origWidth / MAP_WIDTH);
-		height = (int) Math.ceil(origHeight / MAP_HEIGHT);
-
-		// If undersized add another column/row and recenter the image.
-		if (undersizedX > 0) {
-			width++;
-			insertX = (undersizedX - MAP_WIDTH) / 2;
-		}
-		if (undersizedY > 0) {
-			height++;
-			insertY = (undersizedY - MAP_HEIGHT) / 2;
-		}
-	}
-
 	public BufferedImage[] splitImages(@NonNull Direction direction) {
 		if (imagesSplit)
 			return cutImages;
 
 		cutImages = new BufferedImage[height * width];
 
-		Bukkit.getLogger().info("Length: " + cutImages.length + " width: " + width +
-				" height: " + height);
+		// Bukkit.getLogger().info("Length: " + cutImages.length + " width: " + width +
+		// " height: " + height);
 
 		int imageY = insertY;
 		for (int y = 0; y < height; y++) {

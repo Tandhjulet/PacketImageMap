@@ -1,9 +1,8 @@
 package dk.tandhjulet.image.map;
 
 import java.awt.image.BufferedImage;
-import java.awt.image.ColorModel;
-import java.awt.image.WritableRaster;
 
+import dk.tandhjulet.image.utils.CuboidRegion;
 import lombok.Getter;
 
 public class ImageMap {
@@ -28,15 +27,8 @@ public class ImageMap {
 		this.undersized = (undersizedX || undersizedY);
 	}
 
-	public RenderableImageMap getRenderable(int width, int height) {
-		return new RenderableImageMap(cloneImage(), this.width / width, this.height / height);
-	}
-
-	private BufferedImage cloneImage() {
-		ColorModel model = image.getColorModel();
-		boolean isAlphaPremult = model.isAlphaPremultiplied();
-		WritableRaster raster = image.copyData(null);
-		return new BufferedImage(model, raster, isAlphaPremult, null);
+	public RenderableImageMap getRenderable(CuboidRegion region) {
+		return new RenderableImageMap(getImage(), region);
 	}
 
 	public boolean hasSameDimensions(int width, int height) {
@@ -44,6 +36,6 @@ public class ImageMap {
 	}
 
 	public boolean canScaleCleanly(int width, int height) {
-		return width / height == this.width / this.height;
+		return (double) width / height == (double) this.width / this.height;
 	}
 }
