@@ -151,11 +151,11 @@ public class RenderableImageMap {
 
 		Collection<Entity> entities;
 		if (frameDirection.getAxis() == Axis.X) {
-			entities = world.getNearbyEntities(centerLocation, width / 2, height / 2, 1);
+			entities = world.getNearbyEntities(centerLocation, width / 2D + 1, height / 2D + 1, 1);
 		} else if (frameDirection.getAxis() == Axis.Z) {
-			entities = world.getNearbyEntities(centerLocation, 1, height / 2, width / 2);
+			entities = world.getNearbyEntities(centerLocation, 1, height / 2D + 1, width / 2D + 1);
 		} else {
-			entities = world.getNearbyEntities(centerLocation, width / 2, height / 2, width / 2);
+			entities = world.getNearbyEntities(centerLocation, width / 2D + 1, height / 2D + 1, width / 2D + 1);
 		}
 
 		boolean itemFramePresent = false;
