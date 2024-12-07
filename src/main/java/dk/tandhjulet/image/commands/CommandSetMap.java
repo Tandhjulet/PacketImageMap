@@ -1,5 +1,6 @@
 package dk.tandhjulet.image.commands;
 
+import java.awt.geom.AffineTransform;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -69,9 +70,11 @@ public class CommandSetMap implements CommandExecutor {
 			return true;
 		}
 
+		AffineTransform transform = new AffineTransform();
 		parseTransformers(args).forEach((transformer) -> {
-			transformer.apply(map);
+			transformer.apply(transform, map);
 		});
+		map.applyTransform(transform);
 
 		placement.getPos1().getBlock().setType(Material.AIR);
 		placement.getPos2().getBlock().setType(Material.AIR);

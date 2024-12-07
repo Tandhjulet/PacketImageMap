@@ -35,7 +35,7 @@ public class RenderableImageMap {
 	public static final short MAP_HEIGHT = 128;
 
 	@Getter
-	private final BufferedImage image;
+	private BufferedImage image;
 	@Getter
 	boolean imagesSplit = false;
 
@@ -79,10 +79,19 @@ public class RenderableImageMap {
 
 		AffineTransform transform = new AffineTransform();
 		transform.scale(scaleX, scaleY);
-		AffineTransformOp scaleOperation = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR);
 
-		BufferedImage scaledImage = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
-		this.image = scaleOperation.filter(image, scaledImage);
+		this.image = image;
+		applyTransform(transform);
+
+	}
+
+	public void applyTransform(AffineTransform transform) {
+		AffineTransformOp transformOp = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR);
+		BufferedImage newImage = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
+
+		BufferedImage temp = this.image;
+		this.image = transformOp.filter(image, newImage);
+		temp.flush();
 	}
 
 	public int getImageHeight() {

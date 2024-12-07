@@ -8,6 +8,7 @@ import dk.tandhjulet.image.transformer.transformers.ImageCoverTransformer;
 import dk.tandhjulet.image.transformer.transformers.ImageInvertXTransformer;
 import dk.tandhjulet.image.transformer.transformers.ImageInvertYTransformer;
 import dk.tandhjulet.image.transformer.transformers.ImageStretchTransformer;
+import lombok.NonNull;
 
 public enum Transformer {
 	INVERT_X,
@@ -18,17 +19,15 @@ public enum Transformer {
 
 	private ArrayList<ImageTransformer> imageTransformers = new ArrayList<>();
 
-	public boolean apply(RenderableImageMap image) {
+	public AffineTransform apply(@NonNull AffineTransform transform, @NonNull RenderableImageMap image) {
 		if (image.isImagesSplit())
-			return false;
-
-		AffineTransform transform = new AffineTransform();
+			return transform;
 
 		imageTransformers.forEach((transformer) -> {
 			transformer.apply(transform, image);
 		});
 
-		return true;
+		return transform;
 	}
 
 	public void register(ImageTransformer transformer) {
