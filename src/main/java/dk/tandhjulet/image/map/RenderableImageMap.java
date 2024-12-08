@@ -34,26 +34,17 @@ public class RenderableImageMap {
 	public static final short MAP_WIDTH = 128;
 	public static final short MAP_HEIGHT = 128;
 
-	@Getter
-	private BufferedImage image;
-	@Getter
-	boolean imagesSplit = false;
+	private @Getter BufferedImage image;
+	private @Getter boolean imagesSplit = false;
 
-	@Getter
-	private final int origWidth, origHeight;
-	@Getter
-	private final int scaledWidth, scaledHeight;
+	private @Getter final int origWidth, origHeight;
+	private @Getter @Setter int scaledWidth, scaledHeight;
 
-	@Getter
-	private final double scaleX, scaleY;
+	private @Getter final int width, height;
 
-	@Getter
-	private final int width, height;
-	@Setter
-	@Getter
-	private int insertX = 0, insertY = 0;
+	private @Getter @Setter int insertX = 0, insertY = 0;
 
-	BufferedImage[] cutImages = null;
+	private BufferedImage[] cutImages = null;
 
 	public RenderableImageMap(BufferedImage image, CuboidRegion region) {
 		origWidth = image.getWidth();
@@ -65,8 +56,8 @@ public class RenderableImageMap {
 		double mapsNeededX = Math.ceil((double) origWidth / MAP_WIDTH);
 		double mapsNeededY = Math.ceil((double) origHeight / MAP_HEIGHT);
 
-		this.scaleX = region.getWidth() / mapsNeededX;
-		this.scaleY = region.getHeight() / mapsNeededY;
+		double scaleX = region.getWidth() / mapsNeededX;
+		double scaleY = region.getHeight() / mapsNeededY;
 
 		// Bukkit.getLogger().info("Maps needed " + mapsNeededX + " x " + mapsNeededY);
 		// Bukkit.getLogger().info("Scaled up by " + scaleX + " x " + scaleY);
@@ -120,17 +111,27 @@ public class RenderableImageMap {
 
 		cutImages = new BufferedImage[height * width];
 
-		// Bukkit.getLogger().info("Length: " + cutImages.length + " width: " + width +
-		// " height: " + height);
+		Bukkit.getLogger().info("Length: " + cutImages.length + " width: " + width +
+				" height: " + height);
+
+		// North and east facing maps should be in reverse sequence along x/z axis.
+		final boolean isInverted = !(direction.equals(Direction.WEST) || direction.equals(Direction.SOUTH));
 
 		int imageY = insertY;
 		for (int y = 0; y < height; y++) {
 			int imageX = insertX;
 			for (int x = 0; x < width; x++) {
-				// North and east facing maps should be in reverse sequence along x/z axis.
-				final int invertedX = direction.equals(Direction.WEST) || direction.equals(Direction.SOUTH) ? x
-						: (width - x - 1);
-				final int id = (height - y - 1) * Math.max(height, width) + invertedX;
+				// Bukkit.getLogger().info("y: " + y + " x: " + x);
+
+				final int id;
+				if (height == 1) {
+					id = isInverted ? (width - x - 1) : x;
+				} else if (width == 1) {
+					id = (height - y - 1);
+				} else {
+					id = (height - y - 1) * Math.max(height, width) + (isInverted ? (width - x - 1) : x);
+				}
+
 				cutImages[id] = createSubImageFromOriginal(imageX, imageY);
 				imageX += 128;
 			}
@@ -180,11 +181,17 @@ public class RenderableImageMap {
 			Vector minPoint = region.getMin();
 
 			region.forEachLocation((loc) -> {
-				int id = (loc.getBlockY() - minPoint.getBlockY()) * Math.max(height, width);
-				if (frameDirection.getAxis() == Axis.X)
-					id += loc.getBlockX() - minPoint.getBlockX();
-				else
-					id += loc.getBlockZ() - minPoint.getBlockZ();
+				int id = 0;
+				if (width > 1) {
+					if (height > 1)
+						id = (loc.getBlockY() - minPoint.getBlockY()) * Math.max(width, height);
+					if (frameDirection.getAxis() == Axis.X)
+						id += loc.getBlockX() - minPoint.getBlockX();
+					else
+						id += loc.getBlockZ() - minPoint.getBlockZ();
+				} else {
+					id = (loc.getBlockY() - minPoint.getBlockY());
+				}
 
 				MapView view = Bukkit.createMap(world);
 				view.setWorld(world);

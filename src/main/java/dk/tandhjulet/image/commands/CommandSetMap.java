@@ -92,11 +92,11 @@ public class CommandSetMap implements CommandExecutor {
 	private List<Transformer> parseTransformers(String[] args) {
 		List<Transformer> toApply = new LinkedList<>();
 		for (String arg : args) {
-			boolean isValid = EnumUtils.isValidEnum(Transformer.class, arg);
+			boolean isValid = EnumUtils.isValidEnum(Transformer.class, arg.toUpperCase());
 			if (!isValid)
 				continue;
 
-			Transformer transformer = Transformer.valueOf(arg);
+			Transformer transformer = Transformer.valueOf(arg.toUpperCase());
 			toApply.add(transformer);
 		}
 		return toApply;

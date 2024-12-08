@@ -13,3 +13,4 @@ Todo:
 	- stretch
 	- cover
 - persistance
+- 1 width/height bugs out

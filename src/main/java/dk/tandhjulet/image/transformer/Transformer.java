@@ -3,6 +3,8 @@ package dk.tandhjulet.image.transformer;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 
+import org.bukkit.Bukkit;
+
 import dk.tandhjulet.image.map.RenderableImageMap;
 import dk.tandhjulet.image.transformer.transformers.ImageCoverTransformer;
 import dk.tandhjulet.image.transformer.transformers.ImageInvertXTransformer;
@@ -23,6 +25,8 @@ public enum Transformer {
 		if (image.isImagesSplit())
 			return transform;
 
+		Bukkit.getLogger().info("appling to " + toString());
+
 		imageTransformers.forEach((transformer) -> {
 			transformer.apply(transform, image);
 		});
@@ -34,10 +38,10 @@ public enum Transformer {
 		imageTransformers.add(transformer);
 	}
 
-	public static void register() {
-		COVER.register(new ImageCoverTransformer());
-		STRETCH.register(new ImageStretchTransformer());
-		INVERT_X.register(new ImageInvertXTransformer());
-		INVERT_Y.register(new ImageInvertYTransformer());
+	static {
+		new ImageCoverTransformer().register();
+		new ImageStretchTransformer().register();
+		new ImageInvertXTransformer().register();
+		new ImageInvertYTransformer().register();
 	}
 }
