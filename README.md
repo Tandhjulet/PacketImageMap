@@ -8,4 +8,9 @@ Todo:
 
 - transformers
 	- invert
-- persistence
+- make images immutable
+  - check if overlapping when creating
+  - right click rotate
+  - wall block removed 
+  - block placed in front
+  - /killall all

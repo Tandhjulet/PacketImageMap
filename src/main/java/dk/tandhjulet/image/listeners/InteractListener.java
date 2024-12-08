@@ -3,16 +3,19 @@ package dk.tandhjulet.image.listeners;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
 import dk.tandhjulet.image.PacketImage;
 import dk.tandhjulet.image.map.ImageMap;
 import dk.tandhjulet.image.map.MapManager;
+import dk.tandhjulet.image.map.RenderableImageMap;
 import dk.tandhjulet.image.objects.PlacementMetadata;
 import dk.tandhjulet.image.utils.BlockUtils;
 import dk.tandhjulet.image.utils.CuboidRegion;
@@ -71,6 +74,31 @@ public class InteractListener implements Listener {
 
 		player.sendMessage(ratioMessage);
 
+	}
+
+	@EventHandler
+	public void onEntityLeftClick(EntityDamageByEntityEvent e) {
+		if (!(e.getDamager() instanceof Player) || !(e.getEntity() instanceof ItemFrame))
+			return;
+
+		Player player = (Player) e.getDamager();
+		if (!player.isOp() || player.getItemInHand().getType() != Material.STICK)
+			return;
+
+		ItemStack item = ((ItemFrame) e.getEntity()).getItem();
+		if (item.getType() != Material.MAP)
+			return;
+
+		Bukkit.getLogger().info("dura: " + item.getDurability());
+
+		RenderableImageMap imageMap = MapManager.getImageMapFromId(item.getDurability());
+		Bukkit.getLogger().info(" " + imageMap);
+		if (imageMap == null)
+			return;
+
+		Bukkit.getLogger().info("image map is not null");
+
+		imageMap.remove();
 	}
 
 	private static void updatePoint(Player player, Location newPoint, Location oldPoint, ItemStack displayBlock) {

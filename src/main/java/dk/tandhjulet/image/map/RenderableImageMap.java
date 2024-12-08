@@ -55,7 +55,7 @@ public class RenderableImageMap {
 	private @Getter CuboidRegion region;
 
 	private BufferedImage[] cutImages = null;
-	private @Getter @Setter Short[] mapIds;
+	private @Getter Short[] mapIds;
 
 	@Getter
 	private List<Transformer> transforms = new ArrayList<>();
@@ -91,7 +91,14 @@ public class RenderableImageMap {
 		transform.scale(scaleX, scaleY);
 
 		applyAffineTransform(transform);
+	}
 
+	public void setMapIds(Short[] mapIds) {
+		for (Short mapId : this.mapIds) {
+			MapManager.unregisterMapId(mapId);
+		}
+		this.mapIds = mapIds;
+		MapManager.registerRegion(this);
 	}
 
 	public void applyTransformers(List<Transformer> transforms) {
@@ -176,7 +183,7 @@ public class RenderableImageMap {
 		return subImage;
 	}
 
-	private boolean removeEntities(Location pos1, Location pos2, Direction frameDirection) {
+	private Collection<Entity> getEntities(Location pos1, Location pos2, Direction frameDirection) {
 		World world = pos1.getWorld();
 		LocationUtils.floorDecimals(pos1);
 		LocationUtils.floorDecimals(pos2);
@@ -190,6 +197,11 @@ public class RenderableImageMap {
 		} else {
 			entities = world.getNearbyEntities(centerLocation, width / 2D + 1, height / 2D + 1, width / 2D + 1);
 		}
+		return entities;
+	}
+
+	private boolean removeEntities(Location pos1, Location pos2, Direction frameDirection) {
+		Collection<Entity> entities = getEntities(pos1, pos2, frameDirection);
 
 		boolean itemFramePresent = false;
 		for (Entity entity : entities) {
@@ -249,13 +261,15 @@ public class RenderableImageMap {
 				view.addRenderer(imageRenderer);
 
 				if (createMaps) {
-					ItemStack item = MapManager.createMap(view);
+					final ItemStack map = new ItemStack(Material.MAP);
+					map.setDurability(MapManager.getMapId(view));
 					ItemFrame itemFrame = (ItemFrame) world.spawnEntity(loc, EntityType.ITEM_FRAME);
-					itemFrame.setItem(item);
+					itemFrame.setItem(map);
 					itemFrame.setFacingDirection(frameDirection.getBlockFace());
 				}
 			});
 
+			MapManager.registerRegion(this);
 			if (callback != null)
 				callback.run();
 
@@ -266,6 +280,21 @@ public class RenderableImageMap {
 		}, itemFramePresent ? 2L : 0L);
 
 		return true;
+	}
+
+	public void remove() {
+		Axis axis = Axis.getAxisAlignment(region);
+		Direction frameDirection = getFrameDirection(axis, false);
+		getEntities(region.getPos1(), region.getPos2(), frameDirection).forEach((entity) -> {
+			entity.remove();
+		});
+
+		for (BufferedImage image : cutImages) {
+			image.flush();
+		}
+
+		PacketImage.getImageConfig().getImages().remove(this);
+		PacketImage.getImageConfig().save();
 	}
 
 	@Nullable

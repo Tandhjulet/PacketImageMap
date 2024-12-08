@@ -5,8 +5,6 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapView;
 
 import dk.tandhjulet.image.PacketImage;
@@ -21,8 +19,7 @@ public class MapManager {
 	@Getter
 	private static final HashMap<String, ImageMap> imageMaps = new HashMap<>();
 
-	// @Getter
-	// private static final HashMap<> renderedImages = new HashMap<>();
+	private static final HashMap<Short, RenderableImageMap> mapIdToImageMap = new HashMap<>();
 
 	public static void load() throws IOException {
 		for (final File file : imageFolder.listFiles()) {
@@ -51,11 +48,22 @@ public class MapManager {
 		}
 	}
 
-	public static ItemStack createMap(MapView view) {
-		final ItemStack map = new ItemStack(Material.MAP);
-		map.setDurability(getMapId(view));
+	public static void registerRegion(RenderableImageMap imageMap) {
+		for (Short mapId : imageMap.getMapIds()) {
+			mapIdToImageMap.put(mapId, imageMap);
+		}
+	}
 
-		return map;
+	public static void unregisterMapId(Short id) {
+		mapIdToImageMap.remove(id);
+	}
+
+	public static void registerMapId(Short id, RenderableImageMap map) {
+		mapIdToImageMap.put(id, map);
+	}
+
+	public static RenderableImageMap getImageMapFromId(Short id) {
+		return mapIdToImageMap.get(id);
 	}
 
 	@SuppressWarnings("deprecation")
