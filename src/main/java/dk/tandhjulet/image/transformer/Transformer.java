@@ -3,6 +3,7 @@ package dk.tandhjulet.image.transformer;
 import java.awt.geom.AffineTransform;
 import java.util.ArrayList;
 
+import org.apache.commons.lang3.EnumUtils;
 import org.bukkit.Bukkit;
 
 import dk.tandhjulet.image.map.RenderableImageMap;
@@ -32,6 +33,14 @@ public enum Transformer {
 		});
 
 		return transform;
+	}
+
+	public static Transformer from(String str) {
+		boolean isValid = EnumUtils.isValidEnum(Transformer.class, str.toUpperCase());
+		if (!isValid)
+			return null;
+
+		return Transformer.valueOf(str.toUpperCase());
 	}
 
 	public void register(ImageTransformer transformer) {

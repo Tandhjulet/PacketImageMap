@@ -3,12 +3,14 @@ package dk.tandhjulet.image.utils;
 import java.util.function.Consumer;
 
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.util.Vector;
 
 import lombok.Getter;
 
 public class CuboidRegion {
 
+	@Getter
 	private final Location pos1, pos2;
 
 	@Getter
@@ -83,5 +85,9 @@ public class CuboidRegion {
 
 	public int getHeight() {
 		return maxY - minY + 1;
+	}
+
+	public World getWorld() {
+		return pos1.getWorld();
 	}
 }

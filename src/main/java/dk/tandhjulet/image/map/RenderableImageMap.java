@@ -44,9 +44,13 @@ public class RenderableImageMap {
 
 	private @Getter @Setter int insertX = 0, insertY = 0;
 
+	private @Getter CuboidRegion region;
+
 	private BufferedImage[] cutImages = null;
 
 	public RenderableImageMap(BufferedImage image, CuboidRegion region) {
+		this.region = region;
+
 		origWidth = image.getWidth();
 		origHeight = image.getHeight();
 
@@ -149,12 +153,8 @@ public class RenderableImageMap {
 		return subImage;
 	}
 
-	public boolean renderUnsafely(Location pos1, Location pos2, Direction frameDirection) {
-		splitImages(frameDirection);
-		if (cutImages.length == 0)
-			return false;
+	private boolean removeEntities(Location pos1, Location pos2, Direction frameDirection) {
 		World world = pos1.getWorld();
-
 		LocationUtils.floorDecimals(pos1);
 		LocationUtils.floorDecimals(pos2);
 		Location centerLocation = LocationUtils.center(pos1, pos2);
@@ -176,8 +176,19 @@ public class RenderableImageMap {
 			}
 		}
 
+		return itemFramePresent;
+	}
+
+	public boolean renderUnsafely(Direction frameDirection) {
+		splitImages(frameDirection);
+		if (cutImages.length == 0)
+			return false;
+
+		World world = region.getWorld();
+
+		boolean itemFramePresent = removeEntities(region.getPos1(), region.getPos2(), frameDirection);
+
 		Bukkit.getScheduler().runTaskLater(PacketImage.getInstance(), () -> {
-			CuboidRegion region = new CuboidRegion(pos1, pos2);
 			Vector minPoint = region.getMin();
 
 			region.forEachLocation((loc) -> {
@@ -219,19 +230,18 @@ public class RenderableImageMap {
 	}
 
 	@Nullable
-	public Direction getFrameDirection(Location pos1, Location pos2, Axis axis, boolean excludeMinAndMax) {
+	public Direction getFrameDirection(Axis axis, boolean excludeMinAndMax) {
 		if (axis == Axis.MULT)
 			return null;
 
 		boolean isFilledOnRight = true,
 				isFilledOnLeft = true;
 
-		CuboidRegion region = new CuboidRegion(pos1, pos2);
 		for (int x = region.getMinX(); x <= region.getMaxX(); x++) {
 			for (int y = region.getMinY(); y <= region.getMaxY(); y++) {
 				for (int z = region.getMinZ(); z <= region.getMaxZ(); z++) {
-					Location loc = new Location(pos1.getWorld(), x, y, z);
-					if (excludeMinAndMax && (loc.equals(pos1) || loc.equals(pos2)))
+					Location loc = new Location(region.getWorld(), x, y, z);
+					if (excludeMinAndMax && (loc.equals(region.getPos1()) || loc.equals(region.getPos2())))
 						continue;
 					Material material = loc.getBlock().getType();
 

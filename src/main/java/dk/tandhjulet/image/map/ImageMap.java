@@ -1,7 +1,10 @@
 package dk.tandhjulet.image.map;
 
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.util.List;
 
+import dk.tandhjulet.image.transformer.Transformer;
 import dk.tandhjulet.image.utils.CuboidRegion;
 import lombok.Getter;
 
@@ -29,6 +32,18 @@ public class ImageMap {
 
 	public RenderableImageMap getRenderable(CuboidRegion region) {
 		return new RenderableImageMap(getImage(), region);
+	}
+
+	public RenderableImageMap getRenderable(CuboidRegion region, List<Transformer> transformers) {
+		RenderableImageMap map = getRenderable(region);
+
+		AffineTransform transform = new AffineTransform();
+		transformers.forEach((transformer) -> {
+			transformer.apply(transform, map);
+		});
+		map.applyTransform(transform);
+
+		return map;
 	}
 
 	public boolean hasSameDimensions(int width, int height) {

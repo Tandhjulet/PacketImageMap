@@ -4,7 +4,6 @@ import java.awt.geom.AffineTransform;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.apache.commons.lang3.EnumUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -41,6 +40,7 @@ public class CommandSetMap implements CommandExecutor {
 		}
 
 		Player player = (Player) commandSender;
+
 		PlacementMetadata placement = PlacementMetadata.get(player);
 		if (placement == null) {
 			PlacementMetadata.create(player, args[0]);
@@ -64,7 +64,7 @@ public class CommandSetMap implements CommandExecutor {
 
 		RenderableImageMap map = MapManager.getImageMaps().get(placement.getImageFileName())
 				.getRenderable(region);
-		Direction frameDirection = map.getFrameDirection(placement.getPos1(), placement.getPos2(), axis, true);
+		Direction frameDirection = map.getFrameDirection(axis, true);
 		if (frameDirection == null) {
 			player.sendMessage("Please ensure that there are no blocks in the way and that the back wall is filled.");
 			return true;
@@ -79,7 +79,7 @@ public class CommandSetMap implements CommandExecutor {
 		placement.getPos1().getBlock().setType(Material.AIR);
 		placement.getPos2().getBlock().setType(Material.AIR);
 
-		if (map.renderUnsafely(placement.getPos1(), placement.getPos2(), frameDirection)) {
+		if (map.renderUnsafely(frameDirection)) {
 			player.sendMessage("Successfully placed image map.");
 			PlacementMetadata.remove(player);
 		} else {
@@ -92,11 +92,10 @@ public class CommandSetMap implements CommandExecutor {
 	private List<Transformer> parseTransformers(String[] args) {
 		List<Transformer> toApply = new LinkedList<>();
 		for (String arg : args) {
-			boolean isValid = EnumUtils.isValidEnum(Transformer.class, arg.toUpperCase());
-			if (!isValid)
+			Transformer transformer = Transformer.from(arg);
+			if (transformer == null)
 				continue;
 
-			Transformer transformer = Transformer.valueOf(arg.toUpperCase());
 			toApply.add(transformer);
 		}
 		return toApply;
