@@ -13,7 +13,16 @@ public class ImageStretchTransformer extends ImageTransformer {
 		int newWidth = image.getWidth() * RenderableImageMap.MAP_WIDTH;
 		int newHeight = image.getHeight() * RenderableImageMap.MAP_HEIGHT;
 
-		transform.scale(newWidth / image.getImageWidth(), newHeight / image.getImageHeight());
+		double widthRatio = (double) newWidth / image.getImageWidth();
+		double heightRatio = (double) newHeight / image.getImageHeight();
+
+		transform.scale(widthRatio, heightRatio);
+
+		image.setInsertY(0);
+		image.setInsertX(0);
+
+		image.setScaledHeight(newHeight);
+		image.setScaledWidth(newWidth);
 	}
 
 	@Override

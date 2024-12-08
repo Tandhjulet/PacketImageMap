@@ -8,5 +8,4 @@ Todo:
 
 - transformers
 	- invert
-	- stretch
 - persistence
