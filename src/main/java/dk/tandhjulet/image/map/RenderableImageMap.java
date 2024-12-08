@@ -111,8 +111,8 @@ public class RenderableImageMap {
 
 		cutImages = new BufferedImage[height * width];
 
-		Bukkit.getLogger().info("Length: " + cutImages.length + " width: " + width +
-				" height: " + height);
+		// Bukkit.getLogger().info("Length: " + cutImages.length + " width: " + width +
+		// " height: " + height);
 
 		// North and east facing maps should be in reverse sequence along x/z axis.
 		final boolean isInverted = !(direction.equals(Direction.WEST) || direction.equals(Direction.SOUTH));
@@ -161,9 +161,9 @@ public class RenderableImageMap {
 
 		Collection<Entity> entities;
 		if (frameDirection.getAxis() == Axis.X) {
-			entities = world.getNearbyEntities(centerLocation, width / 2D + 1, height / 2D + 1, 1);
+			entities = world.getNearbyEntities(centerLocation, Math.ceil(width / 2D), Math.ceil(height / 2D), 1);
 		} else if (frameDirection.getAxis() == Axis.Z) {
-			entities = world.getNearbyEntities(centerLocation, 1, height / 2D + 1, width / 2D + 1);
+			entities = world.getNearbyEntities(centerLocation, 1, Math.ceil(height / 2D), Math.ceil(width / 2D));
 		} else {
 			entities = world.getNearbyEntities(centerLocation, width / 2D + 1, height / 2D + 1, width / 2D + 1);
 		}

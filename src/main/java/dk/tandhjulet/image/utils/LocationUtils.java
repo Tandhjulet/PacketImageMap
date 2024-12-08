@@ -1,6 +1,7 @@
 
 package dk.tandhjulet.image.utils;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
 import dk.tandhjulet.image.objects.Axis;
@@ -31,9 +32,13 @@ public class LocationUtils {
 	public static Location center(Location pos1, Location pos2) {
 		if (pos1.getWorld() != pos2.getWorld())
 			throw new IllegalArgumentException("Positions are not in the same world.");
-		int avgX = (pos1.getBlockX() + pos2.getBlockX()) / 2;
-		int avgY = (pos1.getBlockY() + pos2.getBlockY()) / 2;
-		int avgZ = (pos1.getBlockZ() + pos2.getBlockZ()) / 2;
+
+		Bukkit.getLogger().info(stringify(pos1));
+		Bukkit.getLogger().info(stringify(pos2));
+
+		double avgX = Math.ceil((double) (pos1.getBlockX() + pos2.getBlockX()) / 2);
+		double avgY = Math.ceil((double) (pos1.getBlockY() + pos2.getBlockY()) / 2);
+		double avgZ = Math.ceil((double) (pos1.getBlockZ() + pos2.getBlockZ()) / 2);
 		return new Location(pos1.getWorld(), avgX, avgY, avgZ);
 	}
 }
