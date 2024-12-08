@@ -101,11 +101,6 @@
 							<pattern>eu.okaeri</pattern>
 							<shadedPattern>dk.tandhjulet.libs</shadedPattern>
 						</relocation>
-
-						<relocation>
-							<pattern>it.unimi.dsi</pattern>
-							<shadedPattern>dk.tandhjulet.libs</shadedPattern>
-						</relocation>
 					</relocations>
 				</configuration>
 			</plugin>

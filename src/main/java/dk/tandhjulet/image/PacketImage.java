@@ -8,6 +8,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import dk.tandhjulet.image.commands.CommandSetMap;
 import dk.tandhjulet.image.config.ImageConfig;
+import dk.tandhjulet.image.config.serializers.DirectionSerializer;
+import dk.tandhjulet.image.config.serializers.ImageSerializer;
+import dk.tandhjulet.image.config.serializers.TransformerSerializer;
 import dk.tandhjulet.image.listeners.InteractListener;
 import dk.tandhjulet.image.map.MapManager;
 import eu.okaeri.configs.ConfigManager;
@@ -28,6 +31,11 @@ public class PacketImage extends JavaPlugin {
 
 		imageConfig = ConfigManager.create(ImageConfig.class, (conf) -> {
 			conf.withConfigurer(new YamlBukkitConfigurer(), new SerdesBukkit());
+			conf.withSerdesPack(registry -> {
+				registry.register(new TransformerSerializer());
+				registry.register(new DirectionSerializer());
+				registry.register(new ImageSerializer());
+			});
 			conf.withBindFile(new File(this.getDataFolder(), "images.yml"));
 			conf.saveDefaults();
 			conf.load(true);

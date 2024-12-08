@@ -1,8 +1,11 @@
 package dk.tandhjulet.image.map;
 
-import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
+
+import javax.imageio.ImageIO;
 
 import dk.tandhjulet.image.transformer.Transformer;
 import dk.tandhjulet.image.utils.CuboidRegion;
@@ -10,7 +13,7 @@ import lombok.Getter;
 
 public class ImageMap {
 	@Getter
-	private final BufferedImage image;
+	private final File imageFile;
 
 	@Getter
 	private final int width, height;
@@ -18,8 +21,12 @@ public class ImageMap {
 	@Getter
 	private final boolean undersized;
 
-	public ImageMap(BufferedImage image) {
-		this.image = image;
+	public ImageMap(File imageFile) throws IOException {
+		this.imageFile = imageFile;
+
+		// Optimize-able, but this generally only runs on load so it's pretty low
+		// priority.
+		BufferedImage image = ImageIO.read(imageFile);
 
 		boolean undersizedX = image.getWidth() % RenderableImageMap.MAP_WIDTH > 0;
 		boolean undersizedY = image.getHeight() % RenderableImageMap.MAP_HEIGHT > 0;
@@ -28,20 +35,17 @@ public class ImageMap {
 		height = (int) Math.ceil(image.getHeight() / RenderableImageMap.MAP_HEIGHT) + (undersizedY ? 1 : 0);
 
 		this.undersized = (undersizedX || undersizedY);
+
+		image.flush();
 	}
 
-	public RenderableImageMap getRenderable(CuboidRegion region) {
-		return new RenderableImageMap(getImage(), region);
+	public RenderableImageMap getRenderable(CuboidRegion region) throws IOException {
+		return new RenderableImageMap(getImageFile(), region);
 	}
 
-	public RenderableImageMap getRenderable(CuboidRegion region, List<Transformer> transformers) {
+	public RenderableImageMap getRenderable(CuboidRegion region, List<Transformer> transformers) throws IOException {
 		RenderableImageMap map = getRenderable(region);
-
-		AffineTransform transform = new AffineTransform();
-		transformers.forEach((transformer) -> {
-			transformer.apply(transform, map);
-		});
-		map.applyTransform(transform);
+		map.applyTransformers(transformers);
 
 		return map;
 	}

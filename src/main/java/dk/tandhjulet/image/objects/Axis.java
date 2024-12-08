@@ -4,10 +4,16 @@ import javax.annotation.Nullable;
 
 import org.bukkit.Location;
 
+import dk.tandhjulet.image.utils.CuboidRegion;
+
 public enum Axis {
 	MULT,
 	X,
 	Z;
+
+	public static Axis getAxisAlignment(CuboidRegion region) {
+		return getAxisAlignment(region.getPos1(), region.getPos2());
+	}
 
 	public static Axis getAxisAlignment(Location pos1, Location pos2) {
 		if (pos1.getBlockZ() - pos2.getBlockZ() == 0D)

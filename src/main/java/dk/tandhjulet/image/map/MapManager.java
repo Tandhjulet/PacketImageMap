@@ -1,24 +1,19 @@
 package dk.tandhjulet.image.map;
 
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.List;
-
-import javax.imageio.ImageIO;
 
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapView;
 
 import dk.tandhjulet.image.PacketImage;
+import dk.tandhjulet.image.objects.Axis;
 import dk.tandhjulet.image.objects.Direction;
 import dk.tandhjulet.image.objects.FileExtension;
-import dk.tandhjulet.image.transformer.Transformer;
-import dk.tandhjulet.image.utils.CuboidRegion;
+import dk.tandhjulet.image.utils.LocationUtils;
 import lombok.Getter;
 
 public class MapManager {
@@ -35,33 +30,42 @@ public class MapManager {
 			if (extension == null)
 				continue;
 
-			final BufferedImage image = ImageIO.read(file);
 			final String slugifiedName = file.getName().replaceAll(" ", "_");
 
-			if (imageMaps.put(slugifiedName, new ImageMap(image)) instanceof ImageMap) {
+			if (imageMaps.put(slugifiedName, new ImageMap(file)) instanceof ImageMap) {
 				Bukkit.getLogger().info("Image naming conflict for " + slugifiedName
 						+ ". It is random what image will take precedence.");
 			}
 		}
 
-		PacketImage.getImageConfig().getImages().forEach((image) -> {
-			ImageMap map = imageMaps.get(image.getImagePath());
-			renderImage(map, image.getPos1(), image.getPos2(), image.getFrameDirection(), image.getTransforms());
-		});
+		for (RenderableImageMap image : PacketImage.getImageConfig().getImages()) {
+			Axis axis = Axis.getAxisAlignment(image.getRegion());
+			Direction frameDirection = image.getFrameDirection(axis, true);
+			if (frameDirection == null) {
+				Bukkit.getLogger()
+						.severe("Blocks are in the way and the image maps can therefor not be placed (Map at: "
+								+ LocationUtils.stringify(image.getRegion().getPos1()) + "). Skipping this map...");
+				continue;
+			}
+			image.renderUnsafely(frameDirection, false, null);
+		}
 	}
 
-	public static void renderImage(ImageMap map, Location pos1, Location pos2, Direction frameDirection,
-			List<Transformer> transforms) {
-		RenderableImageMap imageMap = map.getRenderable(new CuboidRegion(pos1, pos2), transforms);
-		imageMap.renderUnsafely(frameDirection);
+	public static ItemStack createMap(MapView view) {
+		final ItemStack map = new ItemStack(Material.MAP);
+		map.setDurability(getMapId(view));
+
+		return map;
 	}
 
 	@SuppressWarnings("deprecation")
-	public static ItemStack createMap(MapView view) {
-		final ItemStack map = new ItemStack(Material.MAP);
-		map.setDurability(view.getId());
+	public static short getMapId(MapView view) {
+		return view.getId();
+	}
 
-		return map;
+	@SuppressWarnings("deprecation")
+	public static MapView getMapFromId(short id) {
+		return Bukkit.getMap(id);
 	}
 
 	static {

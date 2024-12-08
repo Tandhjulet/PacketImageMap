@@ -21,6 +21,11 @@ public enum Direction {
 		return Direction.valueOf(str.toUpperCase());
 	}
 
+	@Override
+	public String toString() {
+		return name() + " (along " + getAxis().toString() + " axis)";
+	}
+
 	@Getter
 	private final BlockFace blockFace;
 	@Getter

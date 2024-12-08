@@ -3,9 +3,14 @@ package dk.tandhjulet.image.map;
 import java.awt.geom.AffineTransform;
 import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import javax.annotation.Nullable;
+import javax.imageio.ImageIO;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -22,8 +27,10 @@ import org.bukkit.map.MapView;
 import org.bukkit.util.Vector;
 
 import dk.tandhjulet.image.PacketImage;
+import dk.tandhjulet.image.config.ImageConfig;
 import dk.tandhjulet.image.objects.Axis;
 import dk.tandhjulet.image.objects.Direction;
+import dk.tandhjulet.image.transformer.Transformer;
 import dk.tandhjulet.image.utils.CuboidRegion;
 import dk.tandhjulet.image.utils.LocationUtils;
 import lombok.Getter;
@@ -34,6 +41,7 @@ public class RenderableImageMap {
 	public static final short MAP_WIDTH = 128;
 	public static final short MAP_HEIGHT = 128;
 
+	private @Getter File imageFile;
 	private @Getter BufferedImage image;
 	private @Getter boolean imagesSplit = false;
 
@@ -47,15 +55,22 @@ public class RenderableImageMap {
 	private @Getter CuboidRegion region;
 
 	private BufferedImage[] cutImages = null;
+	private @Getter @Setter Short[] mapIds;
 
-	public RenderableImageMap(BufferedImage image, CuboidRegion region) {
+	@Getter
+	private List<Transformer> transforms = new ArrayList<>();
+
+	public RenderableImageMap(File imageFile, CuboidRegion region) throws IOException {
 		this.region = region;
+		this.imageFile = imageFile;
+		this.image = ImageIO.read(imageFile);
 
 		origWidth = image.getWidth();
 		origHeight = image.getHeight();
 
 		height = region.getHeight();
 		width = region.getWidth();
+		mapIds = new Short[height * width];
 
 		double mapsNeededX = Math.ceil((double) origWidth / MAP_WIDTH);
 		double mapsNeededY = Math.ceil((double) origHeight / MAP_HEIGHT);
@@ -75,12 +90,20 @@ public class RenderableImageMap {
 		AffineTransform transform = new AffineTransform();
 		transform.scale(scaleX, scaleY);
 
-		this.image = image;
-		applyTransform(transform);
+		applyAffineTransform(transform);
 
 	}
 
-	public void applyTransform(AffineTransform transform) {
+	public void applyTransformers(List<Transformer> transforms) {
+		AffineTransform transform = new AffineTransform();
+		transforms.forEach((transformer) -> {
+			transformer.apply(transform, this);
+		});
+		applyAffineTransform(transform);
+		this.transforms.addAll(transforms);
+	}
+
+	private void applyAffineTransform(AffineTransform transform) {
 		AffineTransformOp transformOp = new AffineTransformOp(transform, AffineTransformOp.TYPE_BILINEAR);
 		BufferedImage newImage = new BufferedImage(scaledWidth, scaledHeight, BufferedImage.TYPE_INT_ARGB);
 
@@ -179,14 +202,18 @@ public class RenderableImageMap {
 		return itemFramePresent;
 	}
 
-	public boolean renderUnsafely(Direction frameDirection) {
+	public boolean renderUnsafely(Direction frameDirection, boolean createMaps, Runnable callback) {
 		splitImages(frameDirection);
 		if (cutImages.length == 0)
 			return false;
 
 		World world = region.getWorld();
 
-		boolean itemFramePresent = removeEntities(region.getPos1(), region.getPos2(), frameDirection);
+		boolean itemFramePresent;
+		if (createMaps)
+			itemFramePresent = removeEntities(region.getPos1(), region.getPos2(), frameDirection);
+		else
+			itemFramePresent = false;
 
 		Bukkit.getScheduler().runTaskLater(PacketImage.getInstance(), () -> {
 			Vector minPoint = region.getMin();
@@ -204,7 +231,14 @@ public class RenderableImageMap {
 					id = (loc.getBlockY() - minPoint.getBlockY());
 				}
 
-				MapView view = Bukkit.createMap(world);
+				MapView view;
+				if (createMaps) {
+					view = Bukkit.createMap(world);
+					mapIds[id] = MapManager.getMapId(view);
+				} else {
+					view = MapManager.getMapFromId(mapIds[id]);
+				}
+
 				view.setWorld(world);
 
 				for (MapRenderer renderer : view.getRenderers()) {
@@ -214,11 +248,16 @@ public class RenderableImageMap {
 				ImageRenderer imageRenderer = new ImageRenderer(id);
 				view.addRenderer(imageRenderer);
 
-				ItemStack item = MapManager.createMap(view);
-				ItemFrame itemFrame = (ItemFrame) world.spawnEntity(loc, EntityType.ITEM_FRAME);
-				itemFrame.setItem(item);
-				itemFrame.setFacingDirection(frameDirection.getBlockFace());
+				if (createMaps) {
+					ItemStack item = MapManager.createMap(view);
+					ItemFrame itemFrame = (ItemFrame) world.spawnEntity(loc, EntityType.ITEM_FRAME);
+					itemFrame.setItem(item);
+					itemFrame.setFacingDirection(frameDirection.getBlockFace());
+				}
 			});
+
+			if (callback != null)
+				callback.run();
 
 			// Need to wait two ticks if item frames are present:
 			// When marked for removal, it takes a tick before theyre actually removed.
@@ -230,7 +269,7 @@ public class RenderableImageMap {
 	}
 
 	@Nullable
-	public Direction getFrameDirection(Axis axis, boolean excludeMinAndMax) {
+	public Direction getFrameDirection(@NonNull Axis axis, boolean excludeMinAndMax) {
 		if (axis == Axis.MULT)
 			return null;
 
@@ -265,6 +304,12 @@ public class RenderableImageMap {
 		}
 
 		return axis.toDirection(isFilledOnLeft, isFilledOnRight);
+	}
+
+	public void save() {
+		ImageConfig conf = PacketImage.getImageConfig();
+		conf.getImages().add(this);
+		conf.save();
 	}
 
 	public class ImageRenderer extends MapRenderer {

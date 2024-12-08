@@ -1,6 +1,6 @@
 package dk.tandhjulet.image.commands;
 
-import java.awt.geom.AffineTransform;
+import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -62,24 +62,29 @@ public class CommandSetMap implements CommandExecutor {
 
 		CuboidRegion region = placement.getRegion();
 
-		RenderableImageMap map = MapManager.getImageMaps().get(placement.getImageFileName())
-				.getRenderable(region);
+		RenderableImageMap map;
+		try {
+			map = MapManager.getImageMaps().get(placement.getImageFileName())
+					.getRenderable(region);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
+		}
+
 		Direction frameDirection = map.getFrameDirection(axis, true);
 		if (frameDirection == null) {
 			player.sendMessage("Please ensure that there are no blocks in the way and that the back wall is filled.");
 			return true;
 		}
 
-		AffineTransform transform = new AffineTransform();
-		parseTransformers(args).forEach((transformer) -> {
-			transformer.apply(transform, map);
-		});
-		map.applyTransform(transform);
+		map.applyTransformers(parseTransformers(args));
 
 		placement.getPos1().getBlock().setType(Material.AIR);
 		placement.getPos2().getBlock().setType(Material.AIR);
 
-		if (map.renderUnsafely(frameDirection)) {
+		if (map.renderUnsafely(frameDirection, true, () -> {
+			map.save();
+		})) {
 			player.sendMessage("Successfully placed image map.");
 			PlacementMetadata.remove(player);
 		} else {
