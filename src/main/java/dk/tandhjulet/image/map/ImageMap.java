@@ -7,6 +7,7 @@ import java.util.List;
 
 import javax.imageio.ImageIO;
 
+import dk.tandhjulet.image.objects.Direction;
 import dk.tandhjulet.image.transformer.Transformer;
 import dk.tandhjulet.image.utils.CuboidRegion;
 import lombok.Getter;
@@ -39,12 +40,13 @@ public class ImageMap {
 		image.flush();
 	}
 
-	public RenderableImageMap getRenderable(CuboidRegion region) throws IOException {
-		return new RenderableImageMap(getImageFile(), region);
+	public RenderableImageMap getRenderable(CuboidRegion region, Direction frameDirection) throws IOException {
+		return new RenderableImageMap(getImageFile(), region, frameDirection);
 	}
 
-	public RenderableImageMap getRenderable(CuboidRegion region, List<Transformer> transformers) throws IOException {
-		RenderableImageMap map = getRenderable(region);
+	public RenderableImageMap getRenderable(CuboidRegion region, Direction frameDirection,
+			List<Transformer> transformers) throws IOException {
+		RenderableImageMap map = getRenderable(region, frameDirection);
 		map.applyTransformers(transformers);
 
 		return map;

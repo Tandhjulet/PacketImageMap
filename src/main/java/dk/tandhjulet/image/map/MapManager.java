@@ -8,7 +8,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.map.MapView;
 
 import dk.tandhjulet.image.PacketImage;
-import dk.tandhjulet.image.objects.Axis;
 import dk.tandhjulet.image.objects.Direction;
 import dk.tandhjulet.image.objects.FileExtension;
 import dk.tandhjulet.image.utils.LocationUtils;
@@ -35,22 +34,31 @@ public class MapManager {
 			}
 		}
 
+		Bukkit.getLogger().info("---- RENDERING MAPS ----");
+
 		for (RenderableImageMap image : PacketImage.getImageConfig().getImages()) {
-			Axis axis = Axis.getAxisAlignment(image.getRegion());
-			Direction frameDirection = image.getFrameDirection(axis, true);
+			Direction frameDirection = RenderableImageMap.getFrameDirection(image.getRegion(), true);
 			if (frameDirection == null) {
 				Bukkit.getLogger()
-						.severe("Blocks are in the way and the image maps can therefor not be placed (Map at: "
-								+ LocationUtils.stringify(image.getRegion().getPos1()) + "). Skipping this map...");
-				continue;
+						.warning(
+								"Blocks are in the way (or missing) and the item frames can therefor not be placed (Map at: "
+										+ LocationUtils.stringify(image.getRegion().getPos1())
+										+ ")! This is UNDEFINED behaviour, but trying to place anyway...");
 			}
-			image.renderUnsafely(frameDirection, false, null);
+
+			image.renderUnsafely(false, null);
 		}
 	}
 
 	public static void registerRegion(RenderableImageMap imageMap) {
 		for (Short mapId : imageMap.getMapIds()) {
 			mapIdToImageMap.put(mapId, imageMap);
+		}
+	}
+
+	public static void unregisterRegion(RenderableImageMap imageMap) {
+		for (Short mapId : imageMap.getMapIds()) {
+			mapIdToImageMap.remove(mapId);
 		}
 	}
 
@@ -62,7 +70,7 @@ public class MapManager {
 		mapIdToImageMap.put(id, map);
 	}
 
-	public static RenderableImageMap getImageMapFromId(Short id) {
+	public static RenderableImageMap getRegisteredMap(Short id) {
 		return mapIdToImageMap.get(id);
 	}
 

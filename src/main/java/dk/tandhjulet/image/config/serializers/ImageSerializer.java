@@ -8,6 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
 import dk.tandhjulet.image.map.RenderableImageMap;
+import dk.tandhjulet.image.objects.Direction;
 import dk.tandhjulet.image.transformer.Transformer;
 import dk.tandhjulet.image.utils.CuboidRegion;
 import dk.tandhjulet.image.utils.LocationUtils;
@@ -34,6 +35,8 @@ public class ImageSerializer implements ObjectSerializer<RenderableImageMap> {
 		data.add("transforms", image.getTransforms());
 
 		data.addArray("map-ids", image.getMapIds(), Short.class);
+
+		data.add("direction", image.getFrameDirection());
 	}
 
 	@Override
@@ -45,9 +48,11 @@ public class ImageSerializer implements ObjectSerializer<RenderableImageMap> {
 		String imageFilePath = data.get("image-file", String.class);
 		File imageFile = new File(imageFilePath);
 
+		Direction direction = data.get("direction", Direction.class);
+
 		RenderableImageMap image;
 		try {
-			image = new RenderableImageMap(imageFile, region);
+			image = new RenderableImageMap(imageFile, region, direction);
 
 			List<Transformer> transforms = data.getAsList("transforms", Transformer.class);
 			image.applyTransformers(transforms);

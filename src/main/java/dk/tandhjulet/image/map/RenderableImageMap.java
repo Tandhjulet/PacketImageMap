@@ -35,7 +35,6 @@ import dk.tandhjulet.image.transformer.Transformer;
 import dk.tandhjulet.image.utils.CuboidRegion;
 import dk.tandhjulet.image.utils.LocationUtils;
 import lombok.Getter;
-import lombok.NonNull;
 import lombok.Setter;
 
 public class RenderableImageMap {
@@ -60,10 +59,18 @@ public class RenderableImageMap {
 
 	private @Getter Collection<ItemFrame> itemFrames;
 
+	private final @Getter Direction frameDirection;
+
 	@Getter
 	private List<Transformer> transforms = new ArrayList<>();
 
-	public RenderableImageMap(File imageFile, CuboidRegion region) throws IOException {
+	public static RenderableImageMap from(File imageFile, CuboidRegion region) throws IOException {
+		Direction direction = getFrameDirection(region, true);
+		return new RenderableImageMap(imageFile, region, direction);
+	}
+
+	public RenderableImageMap(File imageFile, CuboidRegion region, Direction frameDirection) throws IOException {
+		this.frameDirection = frameDirection;
 		this.region = region;
 		this.imageFile = imageFile;
 		this.image = ImageIO.read(imageFile);
@@ -142,7 +149,10 @@ public class RenderableImageMap {
 		return max;
 	}
 
-	public BufferedImage[] splitImages(@NonNull Direction direction) {
+	public BufferedImage[] splitImages() {
+		if (this.frameDirection == null)
+			throw new IllegalArgumentException("No frame direction provided!");
+
 		if (imagesSplit)
 			return cutImages;
 
@@ -152,7 +162,7 @@ public class RenderableImageMap {
 		// " height: " + height);
 
 		// North and east facing maps should be in reverse sequence along x/z axis.
-		final boolean isInverted = !(direction.equals(Direction.WEST) || direction.equals(Direction.SOUTH));
+		final boolean isInverted = !(frameDirection.equals(Direction.WEST) || frameDirection.equals(Direction.SOUTH));
 
 		int imageY = insertY;
 		for (int y = 0; y < height; y++) {
@@ -198,13 +208,18 @@ public class RenderableImageMap {
 		for (Entity ent : entities) {
 			if (!(ent instanceof ItemFrame))
 				continue;
+			ItemFrame frame = (ItemFrame) ent;
+			if (frame.getItem() != null && frame.getItem().getType() == Material.MAP) {
+				short mapId = frame.getItem().getDurability();
+				if (MapManager.getRegisteredMap(mapId) != this) {
+					return null;
+				}
+			}
 
 			Location loc = ent.getLocation();
 			LocationUtils.floorDecimals(loc);
 			locToFrame.put(loc.hashCode(), (ItemFrame) ent);
 		}
-
-		// Bukkit.getLogger().info("locToFrame size: " + locToFrame.size());
 
 		region.forEachLocation((loc) -> {
 			int width;
@@ -226,22 +241,19 @@ public class RenderableImageMap {
 		return itemframePresent;
 	}
 
-	public boolean renderUnsafely(Direction frameDirection, boolean createMaps, Runnable callback) {
-		splitImages(frameDirection);
+	public boolean renderUnsafely(boolean createMaps, Runnable callback) {
+		splitImages();
 		if (cutImages.length == 0)
 			return false;
 
 		World world = region.getWorld();
 
-		final Collection<Entity> entities = region.getEntities();
-		final ItemFrame[][] itemframesPresent = getItemFrames(entities);
+		try {
+			final Collection<Entity> entities = region.getEntities();
+			final ItemFrame[][] itemframesPresent = getItemFrames(entities);
+			if (itemframesPresent == null)
+				return false;
 
-		// Bukkit.getLogger().info("ents size: " + entities.size());
-		// Bukkit.getLogger().info("item frames: ");
-		// Bukkit.getLogger().info(Arrays.toString(itemframesPresent[0]));
-		// Bukkit.getLogger().info(Arrays.toString(itemframesPresent[1]));
-
-		Bukkit.getScheduler().runTaskLater(PacketImage.getInstance(), () -> {
 			Vector minPoint = region.getMin();
 
 			region.forEachLocation((loc) -> {
@@ -285,7 +297,7 @@ public class RenderableImageMap {
 					item = frame.getItem();
 				}
 
-				if (createMaps || frame == null || item.getDurability() != mapIds[id]) {
+				if (createMaps || frame == null || item == null || item.getDurability() != mapIds[id]) {
 					final ItemStack map = new ItemStack(Material.MAP);
 					map.setDurability(MapManager.getMapId(view));
 
@@ -296,21 +308,22 @@ public class RenderableImageMap {
 					frame.setFacingDirection(frameDirection.getBlockFace());
 				}
 			});
+		} catch (Exception e) {
+			Bukkit.getLogger()
+					.severe("------- SEVERE ERROR OCCURED WHILST PLACING MAP -------");
+			e.printStackTrace();
+		}
 
-			MapManager.registerRegion(this);
-			if (callback != null)
-				callback.run();
-
-			// Need to wait two ticks if item frames are present:
-			// When marked for removal, it takes a tick before theyre actually removed.
-			// If only one tick is waited, this code will run before then. Thus, we need to
-			// wait two ticks before we can be sure that the item frames are removed.
-		}, 2L);
+		MapManager.registerRegion(this);
+		if (callback != null)
+			callback.run();
 
 		return true;
 	}
 
 	public void remove() {
+		MapManager.unregisterRegion(this);
+
 		region.getEntities().forEach((entity) -> {
 			if (entity instanceof ItemFrame)
 				entity.remove();
@@ -325,7 +338,8 @@ public class RenderableImageMap {
 	}
 
 	@Nullable
-	public Direction getFrameDirection(@NonNull Axis axis, boolean excludeMinAndMax) {
+	public static Direction getFrameDirection(CuboidRegion region, boolean excludeMinAndMax) {
+		Axis axis = region.getAxis();
 		if (axis == Axis.MULT)
 			return null;
 

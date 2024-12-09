@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -81,17 +82,49 @@ public class InteractListener implements Listener {
 		if (!(e.getDamager() instanceof Player) || !(e.getEntity() instanceof ItemFrame))
 			return;
 
-		Player player = (Player) e.getDamager();
-		if (!player.isOp() || player.getItemInHand().getType() != Material.STICK)
-			return;
-
 		ItemStack item = ((ItemFrame) e.getEntity()).getItem();
 		if (item.getType() != Material.MAP)
 			return;
 
-		RenderableImageMap imageMap = MapManager.getImageMapFromId(item.getDurability());
+		RenderableImageMap imageMap = MapManager.getRegisteredMap(item.getDurability());
 		if (imageMap == null)
 			return;
+		e.setCancelled(true);
+
+		Player player = (Player) e.getDamager();
+		if (!player.isOp())
+			return;
+
+		if (player.getItemInHand().getType() != Material.STICK) {
+			player.sendMessage("Left cick on the image with a stick to remove.");
+			return;
+		}
+
+		imageMap.remove();
+	}
+
+	@EventHandler
+	public void onEntityRightClick(PlayerInteractEntityEvent e) {
+		if (!(e.getRightClicked() instanceof ItemFrame))
+			return;
+
+		ItemStack item = ((ItemFrame) e.getRightClicked()).getItem();
+		if (item.getType() != Material.MAP)
+			return;
+
+		RenderableImageMap imageMap = MapManager.getRegisteredMap(item.getDurability());
+		if (imageMap == null)
+			return;
+		e.setCancelled(true);
+
+		if (!e.getPlayer().isOp())
+			return;
+
+		Player player = e.getPlayer();
+		if (player.getItemInHand().getType() != Material.STICK) {
+			player.sendMessage("Left cick on the image with a stick to remove.");
+			return;
+		}
 
 		imageMap.remove();
 	}

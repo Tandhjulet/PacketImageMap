@@ -8,5 +8,5 @@ Todo:
 
 - transformers
 	- invert
-- make images rerender so they are immutable
-- check for overlap
+- rerender map on destroy
+- actually use packets instead of bukkit methods

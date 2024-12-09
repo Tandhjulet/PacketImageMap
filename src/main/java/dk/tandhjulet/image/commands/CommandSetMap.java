@@ -62,19 +62,19 @@ public class CommandSetMap implements CommandExecutor {
 
 		CuboidRegion region = placement.getRegion();
 
-		RenderableImageMap map;
-		try {
-			map = MapManager.getImageMaps().get(placement.getImageFileName())
-					.getRenderable(region);
-		} catch (IOException e) {
-			e.printStackTrace();
-			return false;
-		}
-
-		Direction frameDirection = map.getFrameDirection(axis, true);
+		Direction frameDirection = RenderableImageMap.getFrameDirection(region, true);
 		if (frameDirection == null) {
 			player.sendMessage("Please ensure that there are no blocks in the way and that the back wall is filled.");
 			return true;
+		}
+
+		RenderableImageMap map;
+		try {
+			map = MapManager.getImageMaps().get(placement.getImageFileName())
+					.getRenderable(region, frameDirection);
+		} catch (IOException e) {
+			e.printStackTrace();
+			return false;
 		}
 
 		map.applyTransformers(parseTransformers(args));
@@ -82,7 +82,7 @@ public class CommandSetMap implements CommandExecutor {
 		placement.getPos1().getBlock().setType(Material.AIR);
 		placement.getPos2().getBlock().setType(Material.AIR);
 
-		if (map.renderUnsafely(frameDirection, true, () -> {
+		if (map.renderUnsafely(true, () -> {
 			map.save();
 		})) {
 			player.sendMessage("Successfully placed image map.");
