@@ -6,7 +6,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -187,27 +186,6 @@ public class RenderableImageMap {
 		return subImage;
 	}
 
-	private Collection<Short> getMissingMaps(Collection<Entity> entities) {
-		// Not exactly the efficient, but hey.
-		Collection<Short> ids = new ArrayList<>(Arrays.asList(mapIds));
-		if (entities == null)
-			entities = region.getEntities();
-
-		for (Entity entity : entities) {
-			if (!(entity instanceof ItemFrame))
-				continue;
-
-			ItemFrame frame = (ItemFrame) entity;
-			ItemStack frameItem = frame.getItem();
-			if (frameItem.getType() != Material.MAP)
-				continue;
-
-			Short mapId = frameItem.getDurability();
-			ids.remove(mapId);
-		}
-		return ids;
-	}
-
 	private ItemFrame[][] getItemFrames(Collection<Entity> entities) {
 		if (entities == null)
 			entities = region.getEntities();
@@ -256,7 +234,6 @@ public class RenderableImageMap {
 		World world = region.getWorld();
 
 		final Collection<Entity> entities = region.getEntities();
-		final Collection<Short> missingMapIds = getMissingMaps(entities);
 		final ItemFrame[][] itemframesPresent = getItemFrames(entities);
 
 		// Bukkit.getLogger().info("ents size: " + entities.size());
@@ -291,31 +268,32 @@ public class RenderableImageMap {
 					view = MapManager.getMapFromId(mapIds[id]);
 				}
 
-				view.setWorld(world);
+				if (view.getRenderers().size() != 1 || !(view.getRenderers().get(0) instanceof ImageRenderer)) {
+					view.setWorld(world);
 
-				for (MapRenderer renderer : view.getRenderers()) {
-					view.removeRenderer(renderer);
+					for (MapRenderer renderer : view.getRenderers()) {
+						view.removeRenderer(renderer);
+					}
+
+					ImageRenderer imageRenderer = new ImageRenderer(id);
+					view.addRenderer(imageRenderer);
 				}
 
-				ImageRenderer imageRenderer = new ImageRenderer(id);
-				view.addRenderer(imageRenderer);
+				ItemFrame frame = itemframesPresent[locWidth][locHeight];
+				ItemStack item = null;
+				if (frame != null && frame.getItem() != null && frame.getItem().getType() == Material.MAP) {
+					item = frame.getItem();
+				}
 
-				if (createMaps || missingMapIds.contains(mapIds[id])) {
+				if (createMaps || frame == null || item.getDurability() != mapIds[id]) {
 					final ItemStack map = new ItemStack(Material.MAP);
 					map.setDurability(MapManager.getMapId(view));
 
-					ItemFrame itemFrame;
-
-					// Bukkit.getLogger().info("w: " + locWidth + " h: " + locHeight);
-					// Bukkit.getLogger().info("^ item: " + itemframesPresent[locWidth][locHeight]);
-
-					if (itemframesPresent[locWidth][locHeight] == null) {
-						itemFrame = (ItemFrame) world.spawnEntity(loc, EntityType.ITEM_FRAME);
-					} else {
-						itemFrame = itemframesPresent[locWidth][locHeight];
+					if (frame == null) {
+						frame = (ItemFrame) world.spawnEntity(loc, EntityType.ITEM_FRAME);
 					}
-					itemFrame.setItem(map);
-					itemFrame.setFacingDirection(frameDirection.getBlockFace());
+					frame.setItem(map);
+					frame.setFacingDirection(frameDirection.getBlockFace());
 				}
 			});
 

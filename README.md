@@ -8,9 +8,5 @@ Todo:
 
 - transformers
 	- invert
-- make images immutable
-  - check if overlapping when creating
-  - right click rotate
-  - wall block removed 
-  - block placed in front
-  - /killall all
+- make images rerender so they are immutable
+- check for overlap
