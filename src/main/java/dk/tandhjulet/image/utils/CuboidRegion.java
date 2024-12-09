@@ -1,11 +1,14 @@
 package dk.tandhjulet.image.utils;
 
+import java.util.Collection;
 import java.util.function.Consumer;
 
 import org.bukkit.Location;
 import org.bukkit.World;
+import org.bukkit.entity.Entity;
 import org.bukkit.util.Vector;
 
+import dk.tandhjulet.image.objects.Axis;
 import lombok.Getter;
 
 public class CuboidRegion {
@@ -19,6 +22,8 @@ public class CuboidRegion {
 	private final int minX, minY, minZ;
 
 	private Vector min, max;
+
+	private @Getter Axis axis;
 
 	public CuboidRegion(Location pos1, Location pos2) {
 		if (pos1.getWorld() != pos2.getWorld())
@@ -36,6 +41,8 @@ public class CuboidRegion {
 		minX = min.getBlockX();
 		minY = min.getBlockY();
 		minZ = min.getBlockZ();
+
+		this.axis = Axis.getAxisAlignment(this);
 	}
 
 	public void forEachLocation(Consumer<Location> consumer) {
@@ -89,5 +96,25 @@ public class CuboidRegion {
 
 	public World getWorld() {
 		return pos1.getWorld();
+	}
+
+	public Collection<Entity> getEntities() {
+		int width = getWidth();
+		int height = getHeight();
+
+		World world = pos1.getWorld();
+		LocationUtils.floorDecimals(pos1);
+		LocationUtils.floorDecimals(pos2);
+		Location centerLocation = LocationUtils.center(pos1, pos2);
+
+		Collection<Entity> entities;
+		if (axis == Axis.X) {
+			entities = world.getNearbyEntities(centerLocation, Math.ceil(width / 2D), Math.ceil(height / 2D), 1);
+		} else if (axis == Axis.Z) {
+			entities = world.getNearbyEntities(centerLocation, 1, Math.ceil(height / 2D), Math.ceil(width / 2D));
+		} else {
+			entities = world.getNearbyEntities(centerLocation, width / 2D + 1, height / 2D + 1, width / 2D + 1);
+		}
+		return entities;
 	}
 }

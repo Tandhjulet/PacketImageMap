@@ -9,6 +9,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -78,6 +79,8 @@ public class InteractListener implements Listener {
 
 	@EventHandler
 	public void onEntityLeftClick(EntityDamageByEntityEvent e) {
+		Bukkit.getLogger().info("entity damage");
+
 		if (!(e.getDamager() instanceof Player) || !(e.getEntity() instanceof ItemFrame))
 			return;
 
@@ -89,16 +92,16 @@ public class InteractListener implements Listener {
 		if (item.getType() != Material.MAP)
 			return;
 
-		Bukkit.getLogger().info("dura: " + item.getDurability());
-
 		RenderableImageMap imageMap = MapManager.getImageMapFromId(item.getDurability());
-		Bukkit.getLogger().info(" " + imageMap);
 		if (imageMap == null)
 			return;
 
-		Bukkit.getLogger().info("image map is not null");
-
 		imageMap.remove();
+	}
+
+	@EventHandler
+	public void onDamage(EntityDamageEvent e) {
+		Bukkit.getLogger().info("entity damage 2");
 	}
 
 	private static void updatePoint(Player player, Location newPoint, Location oldPoint, ItemStack displayBlock) {

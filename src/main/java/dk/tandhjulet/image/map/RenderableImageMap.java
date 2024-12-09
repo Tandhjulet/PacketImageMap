@@ -6,7 +6,9 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -56,6 +58,8 @@ public class RenderableImageMap {
 
 	private BufferedImage[] cutImages = null;
 	private @Getter Short[] mapIds;
+
+	private @Getter Collection<ItemFrame> itemFrames;
 
 	@Getter
 	private List<Transformer> transforms = new ArrayList<>();
@@ -183,35 +187,65 @@ public class RenderableImageMap {
 		return subImage;
 	}
 
-	private Collection<Entity> getEntities(Location pos1, Location pos2, Direction frameDirection) {
-		World world = pos1.getWorld();
-		LocationUtils.floorDecimals(pos1);
-		LocationUtils.floorDecimals(pos2);
-		Location centerLocation = LocationUtils.center(pos1, pos2);
+	private Collection<Short> getMissingMaps(Collection<Entity> entities) {
+		// Not exactly the efficient, but hey.
+		Collection<Short> ids = new ArrayList<>(Arrays.asList(mapIds));
+		if (entities == null)
+			entities = region.getEntities();
 
-		Collection<Entity> entities;
-		if (frameDirection.getAxis() == Axis.X) {
-			entities = world.getNearbyEntities(centerLocation, Math.ceil(width / 2D), Math.ceil(height / 2D), 1);
-		} else if (frameDirection.getAxis() == Axis.Z) {
-			entities = world.getNearbyEntities(centerLocation, 1, Math.ceil(height / 2D), Math.ceil(width / 2D));
-		} else {
-			entities = world.getNearbyEntities(centerLocation, width / 2D + 1, height / 2D + 1, width / 2D + 1);
+		for (Entity entity : entities) {
+			if (!(entity instanceof ItemFrame))
+				continue;
+
+			ItemFrame frame = (ItemFrame) entity;
+			ItemStack frameItem = frame.getItem();
+			if (frameItem.getType() != Material.MAP)
+				continue;
+
+			Short mapId = frameItem.getDurability();
+			ids.remove(mapId);
 		}
-		return entities;
+		return ids;
 	}
 
-	private boolean removeEntities(Location pos1, Location pos2, Direction frameDirection) {
-		Collection<Entity> entities = getEntities(pos1, pos2, frameDirection);
+	private ItemFrame[][] getItemFrames(Collection<Entity> entities) {
+		if (entities == null)
+			entities = region.getEntities();
 
-		boolean itemFramePresent = false;
-		for (Entity entity : entities) {
-			if (entity instanceof ItemFrame) {
-				entity.remove();
-				itemFramePresent = true;
-			}
+		ItemFrame[][] itemframePresent = new ItemFrame[width][height];
+		HashMap<Integer, ItemFrame> locToFrame = new HashMap<>();
+
+		Vector min = region.getMin();
+
+		for (Entity ent : entities) {
+			if (!(ent instanceof ItemFrame))
+				continue;
+
+			Location loc = ent.getLocation();
+			LocationUtils.floorDecimals(loc);
+			locToFrame.put(loc.hashCode(), (ItemFrame) ent);
 		}
 
-		return itemFramePresent;
+		// Bukkit.getLogger().info("locToFrame size: " + locToFrame.size());
+
+		region.forEachLocation((loc) -> {
+			int width;
+			if (region.getAxis() == Axis.X)
+				width = loc.getBlockX() - min.getBlockX();
+			else if (region.getAxis() == Axis.Z)
+				width = loc.getBlockZ() - min.getBlockZ();
+			else
+				throw new RuntimeException("cuboid region is not axis aligned");
+
+			int height = loc.getBlockY() - min.getBlockY();
+
+			LocationUtils.floorDecimals(loc);
+
+			Integer hash = loc.hashCode();
+			itemframePresent[width][height] = locToFrame.get(hash);
+		});
+
+		return itemframePresent;
 	}
 
 	public boolean renderUnsafely(Direction frameDirection, boolean createMaps, Runnable callback) {
@@ -221,26 +255,32 @@ public class RenderableImageMap {
 
 		World world = region.getWorld();
 
-		boolean itemFramePresent;
-		if (createMaps)
-			itemFramePresent = removeEntities(region.getPos1(), region.getPos2(), frameDirection);
-		else
-			itemFramePresent = false;
+		final Collection<Entity> entities = region.getEntities();
+		final Collection<Short> missingMapIds = getMissingMaps(entities);
+		final ItemFrame[][] itemframesPresent = getItemFrames(entities);
+
+		// Bukkit.getLogger().info("ents size: " + entities.size());
+		// Bukkit.getLogger().info("item frames: ");
+		// Bukkit.getLogger().info(Arrays.toString(itemframesPresent[0]));
+		// Bukkit.getLogger().info(Arrays.toString(itemframesPresent[1]));
 
 		Bukkit.getScheduler().runTaskLater(PacketImage.getInstance(), () -> {
 			Vector minPoint = region.getMin();
 
 			region.forEachLocation((loc) -> {
 				int id = 0;
+				int locWidth = 0;
+				int locHeight = loc.getBlockY() - minPoint.getBlockY();
 				if (width > 1) {
 					if (height > 1)
-						id = (loc.getBlockY() - minPoint.getBlockY()) * Math.max(width, height);
+						id = locHeight * Math.max(width, height);
 					if (frameDirection.getAxis() == Axis.X)
-						id += loc.getBlockX() - minPoint.getBlockX();
+						locWidth = loc.getBlockX() - minPoint.getBlockX();
 					else
-						id += loc.getBlockZ() - minPoint.getBlockZ();
+						locWidth = loc.getBlockZ() - minPoint.getBlockZ();
+					id += locWidth;
 				} else {
-					id = (loc.getBlockY() - minPoint.getBlockY());
+					id = locHeight;
 				}
 
 				MapView view;
@@ -260,10 +300,20 @@ public class RenderableImageMap {
 				ImageRenderer imageRenderer = new ImageRenderer(id);
 				view.addRenderer(imageRenderer);
 
-				if (createMaps) {
+				if (createMaps || missingMapIds.contains(mapIds[id])) {
 					final ItemStack map = new ItemStack(Material.MAP);
 					map.setDurability(MapManager.getMapId(view));
-					ItemFrame itemFrame = (ItemFrame) world.spawnEntity(loc, EntityType.ITEM_FRAME);
+
+					ItemFrame itemFrame;
+
+					// Bukkit.getLogger().info("w: " + locWidth + " h: " + locHeight);
+					// Bukkit.getLogger().info("^ item: " + itemframesPresent[locWidth][locHeight]);
+
+					if (itemframesPresent[locWidth][locHeight] == null) {
+						itemFrame = (ItemFrame) world.spawnEntity(loc, EntityType.ITEM_FRAME);
+					} else {
+						itemFrame = itemframesPresent[locWidth][locHeight];
+					}
 					itemFrame.setItem(map);
 					itemFrame.setFacingDirection(frameDirection.getBlockFace());
 				}
@@ -277,16 +327,15 @@ public class RenderableImageMap {
 			// When marked for removal, it takes a tick before theyre actually removed.
 			// If only one tick is waited, this code will run before then. Thus, we need to
 			// wait two ticks before we can be sure that the item frames are removed.
-		}, itemFramePresent ? 2L : 0L);
+		}, 2L);
 
 		return true;
 	}
 
 	public void remove() {
-		Axis axis = Axis.getAxisAlignment(region);
-		Direction frameDirection = getFrameDirection(axis, false);
-		getEntities(region.getPos1(), region.getPos2(), frameDirection).forEach((entity) -> {
-			entity.remove();
+		region.getEntities().forEach((entity) -> {
+			if (entity instanceof ItemFrame)
+				entity.remove();
 		});
 
 		for (BufferedImage image : cutImages) {
