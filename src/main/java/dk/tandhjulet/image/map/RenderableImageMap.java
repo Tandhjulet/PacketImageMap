@@ -311,6 +311,7 @@ public class RenderableImageMap {
 		} catch (Exception e) {
 			Bukkit.getLogger()
 					.severe("------- SEVERE ERROR OCCURED WHILST PLACING MAP -------");
+			Bukkit.getLogger().severe("map at " + LocationUtils.stringify(region.getPos1()));
 			e.printStackTrace();
 		}
 

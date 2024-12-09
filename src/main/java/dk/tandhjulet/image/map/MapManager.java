@@ -48,6 +48,8 @@ public class MapManager {
 
 			image.renderUnsafely(false, null);
 		}
+
+		Bukkit.getLogger().info("---- DONE RENDERING ----");
 	}
 
 	public static void registerRegion(RenderableImageMap imageMap) {
