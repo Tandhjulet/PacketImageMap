@@ -17,8 +17,9 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.craftbukkit.v1_8_R3.CraftServer;
+import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -29,6 +30,8 @@ import org.bukkit.util.Vector;
 
 import dk.tandhjulet.image.PacketImage;
 import dk.tandhjulet.image.config.ImageConfig;
+import dk.tandhjulet.image.itemframe.CraftImageFrame;
+import dk.tandhjulet.image.itemframe.ImageFrame;
 import dk.tandhjulet.image.objects.Axis;
 import dk.tandhjulet.image.objects.Direction;
 import dk.tandhjulet.image.transformer.Transformer;
@@ -272,12 +275,13 @@ public class RenderableImageMap {
 					id = locHeight;
 				}
 
-				MapView view;
-				if (createMaps) {
+				MapView view = null;
+				if (!createMaps) {
+					view = MapManager.getMapFromId(mapIds[id]);
+				}
+				if (createMaps || view == null) {
 					view = Bukkit.createMap(world);
 					mapIds[id] = MapManager.getMapId(view);
-				} else {
-					view = MapManager.getMapFromId(mapIds[id]);
 				}
 
 				if (view.getRenderers().size() != 1 || !(view.getRenderers().get(0) instanceof ImageRenderer)) {
@@ -302,7 +306,12 @@ public class RenderableImageMap {
 					map.setDurability(MapManager.getMapId(view));
 
 					if (frame == null) {
-						frame = (ItemFrame) world.spawnEntity(loc, EntityType.ITEM_FRAME);
+						ImageFrame nmsItemFrame = new ImageFrame(((CraftWorld) region.getWorld()).getHandle(),
+								LocationUtils.toBlockPosition(loc), frameDirection.getNmsDirection());
+
+						frame = new CraftImageFrame((CraftServer) Bukkit.getServer(), nmsItemFrame);
+
+						// frame = (ItemFrame) world.spawnEntity(region, EntityType.ITEM_FRAME);
 					}
 					frame.setItem(map);
 					frame.setFacingDirection(frameDirection.getBlockFace());
@@ -326,8 +335,8 @@ public class RenderableImageMap {
 		MapManager.unregisterRegion(this);
 
 		region.getEntities().forEach((entity) -> {
-			if (entity instanceof ItemFrame)
-				entity.remove();
+			if (entity instanceof CraftImageFrame)
+				((CraftImageFrame) entity).removeFrame();
 		});
 
 		for (BufferedImage image : cutImages) {

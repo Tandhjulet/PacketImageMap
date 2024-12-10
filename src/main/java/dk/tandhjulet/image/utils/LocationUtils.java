@@ -4,6 +4,8 @@ package dk.tandhjulet.image.utils;
 import org.bukkit.Location;
 
 import dk.tandhjulet.image.objects.Axis;
+import net.minecraft.server.v1_8_R3.BlockPosition;
+import net.minecraft.server.v1_8_R3.World;
 
 public class LocationUtils {
 	public static Location floorDecimals(Location location) {
@@ -36,5 +38,13 @@ public class LocationUtils {
 		double avgY = Math.ceil((double) (pos1.getBlockY() + pos2.getBlockY()) / 2);
 		double avgZ = Math.ceil((double) (pos1.getBlockZ() + pos2.getBlockZ()) / 2);
 		return new Location(pos1.getWorld(), avgX, avgY, avgZ);
+	}
+
+	public static BlockPosition toBlockPosition(Location loc) {
+		return new BlockPosition(loc.getBlockX(), loc.getBlockY(), loc.getBlockZ());
+	}
+
+	public static Location from(BlockPosition position, World world) {
+		return new Location(world.getWorld(), position.getX(), position.getY(), position.getZ());
 	}
 }

@@ -11,7 +11,6 @@ import dk.tandhjulet.image.config.ImageConfig;
 import dk.tandhjulet.image.config.serializers.DirectionSerializer;
 import dk.tandhjulet.image.config.serializers.ImageSerializer;
 import dk.tandhjulet.image.config.serializers.TransformerSerializer;
-import dk.tandhjulet.image.listeners.HangingEvent;
 import dk.tandhjulet.image.listeners.InteractListener;
 import dk.tandhjulet.image.map.MapManager;
 import eu.okaeri.configs.ConfigManager;
@@ -42,7 +41,6 @@ public class PacketImage extends JavaPlugin {
 			conf.load(true);
 		});
 
-		HangingEvent.register();
 		CommandSetMap.register();
 		InteractListener.register();
 
