@@ -208,7 +208,8 @@ public class RenderableImageMap {
 		Vector min = region.getMin();
 
 		for (Entity ent : entities) {
-			if (!(ent instanceof ItemFrame))
+
+			if (!(ent instanceof CraftImageFrame))
 				continue;
 			ItemFrame frame = (ItemFrame) ent;
 			if (frame.getItem() != null && frame.getItem().getType() == Material.MAP) {
@@ -243,15 +244,41 @@ public class RenderableImageMap {
 		return itemframePresent;
 	}
 
-	public boolean renderUnsafely(boolean createMaps, Runnable callback) {
+	public boolean render(boolean createMaps, Runnable callback) {
 		splitImages();
 		if (cutImages.length == 0)
 			return false;
 
+		final Collection<Entity> entities = region.getEntities();
+		if (entities.size() == 0)
+			return renderUnsafely(createMaps, callback, entities);
+
+		boolean itemframePresent = false;
+		for (Entity ent : entities) {
+			if (!(ent instanceof ItemFrame))
+				continue;
+
+			// Remove call will be ignored on CraftImageFrames, so we only clear
+			// regular item frames here.
+			ent.remove();
+
+			if (!(ent instanceof CraftImageFrame))
+				itemframePresent = true;
+		}
+
+		if (!itemframePresent)
+			return renderUnsafely(createMaps, callback, entities);
+
+		Bukkit.getScheduler().runTaskLater(PacketImage.getInstance(), () -> {
+			renderUnsafely(createMaps, callback, entities);
+		}, 2L);
+		return true;
+	}
+
+	private boolean renderUnsafely(boolean createMaps, Runnable callback, Collection<Entity> entities) {
 		World world = region.getWorld();
 
 		try {
-			final Collection<Entity> entities = region.getEntities();
 			final ItemFrame[][] itemframesPresent = getItemFrames(entities);
 			if (itemframesPresent == null)
 				return false;

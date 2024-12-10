@@ -41,12 +41,12 @@ public class MapManager {
 			if (frameDirection == null) {
 				Bukkit.getLogger()
 						.warning(
-								"Blocks are in the way (or missing) and the item frames can therefor not be placed (Map at: "
+								"Blocks are in the way (or missing) and the item frames can therefore not be placed (Map at: "
 										+ LocationUtils.stringify(image.getRegion().getPos1())
-										+ ")! This is UNDEFINED behaviour, but trying to place anyway...");
+										+ ")!");
 			}
 
-			image.renderUnsafely(false, null);
+			image.render(false, null);
 		}
 
 		Bukkit.getLogger().info("---- DONE RENDERING ----");
