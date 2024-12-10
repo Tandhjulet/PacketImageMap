@@ -6,6 +6,7 @@ import org.bukkit.craftbukkit.v1_8_R3.entity.CraftHumanEntity;
 
 import dk.tandhjulet.image.map.MapManager;
 import dk.tandhjulet.image.map.RenderableImageMap;
+import dk.tandhjulet.image.objects.ClickType;
 import dk.tandhjulet.image.objects.Direction;
 import net.minecraft.server.v1_8_R3.BlockPosition;
 import net.minecraft.server.v1_8_R3.DamageSource;
@@ -40,29 +41,7 @@ public class ImageFrame extends EntityItemFrame {
 	@Override
 	// On damage/on left click
 	public boolean damageEntity(DamageSource source, float f) {
-		Entity entity = source.getEntity();
-
-		if (!(entity instanceof EntityHuman))
-			return true;
-
-		CraftHumanEntity player = ((EntityHuman) entity).getBukkitEntity();
-		if (!player.isOp())
-			return true;
-
-		if (player.getItemInHand().getType() != Material.STICK) {
-			player.sendMessage("Left click with a stick in hand to remove this image!");
-			return true;
-		}
-
-		short data = (short) getItem().getData();
-		RenderableImageMap map = MapManager.getRegisteredMap(data);
-		if (map == null) {
-			player.sendMessage("Could not find image map at this location in memory... Please contact the developer.");
-			return true;
-		}
-
-		map.remove();
-
+		handleClick(source.getEntity(), ClickType.LEFT);
 		return true;
 	}
 
@@ -75,9 +54,31 @@ public class ImageFrame extends EntityItemFrame {
 	@Override
 	// Right click on map handler
 	public boolean e(EntityHuman human) {
-		CraftHumanEntity player = human.getBukkitEntity();
-		player.sendMessage("Left click with a stick in hand to remove this image!");
+		handleClick(human, ClickType.RIGHT);
 		return true;
+	}
+
+	public void handleClick(Entity entity, ClickType clickType) {
+		if (!(entity instanceof EntityHuman))
+			return;
+
+		CraftHumanEntity player = ((EntityHuman) entity).getBukkitEntity();
+		if (!player.isOp())
+			return;
+
+		if (player.getItemInHand().getType() != Material.STICK || clickType != ClickType.LEFT) {
+			player.sendMessage("Left click with a stick in hand to remove this image!");
+			return;
+		}
+
+		short data = (short) getItem().getData();
+		RenderableImageMap map = MapManager.getRegisteredMap(data);
+		if (map == null) {
+			player.sendMessage("Could not find image map at this location in memory... Please contact the developer.");
+			return;
+		}
+
+		map.remove();
 	}
 
 	@Override
