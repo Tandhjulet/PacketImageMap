@@ -3,26 +3,29 @@ package dk.tandhjulet.image.listeners;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
 import dk.tandhjulet.image.PacketImage;
 import dk.tandhjulet.image.map.ImageMap;
 import dk.tandhjulet.image.map.MapManager;
-import dk.tandhjulet.image.map.RenderableImageMap;
 import dk.tandhjulet.image.objects.PlacementMetadata;
 import dk.tandhjulet.image.utils.BlockUtils;
 import dk.tandhjulet.image.utils.CuboidRegion;
 import dk.tandhjulet.image.utils.LocationUtils;
 
 public class InteractListener implements Listener {
+
+	//
+	// Looking for the code handling left and right click on item frames?
+	// To best circumvent any other plugin having the final say in what happens to
+	// the map, the code has been moved directly to this plugins own NMS
+	// (ImageFrame.java) implementation of item frames.
+	//
 
 	@EventHandler
 	public void onInteract(PlayerInteractEvent e) {
@@ -75,58 +78,6 @@ public class InteractListener implements Listener {
 
 		player.sendMessage(ratioMessage);
 
-	}
-
-	@EventHandler
-	public void onEntityLeftClick(EntityDamageByEntityEvent e) {
-		if (!(e.getDamager() instanceof Player) || !(e.getEntity() instanceof ItemFrame))
-			return;
-
-		ItemStack item = ((ItemFrame) e.getEntity()).getItem();
-		if (item.getType() != Material.MAP)
-			return;
-
-		RenderableImageMap imageMap = MapManager.getRegisteredMap(item.getDurability());
-		if (imageMap == null)
-			return;
-		e.setCancelled(true);
-
-		Player player = (Player) e.getDamager();
-		if (!player.isOp())
-			return;
-
-		if (player.getItemInHand().getType() != Material.STICK) {
-			player.sendMessage("Left cick on the image with a stick to remove.");
-			return;
-		}
-
-		imageMap.remove();
-	}
-
-	@EventHandler
-	public void onEntityRightClick(PlayerInteractEntityEvent e) {
-		if (!(e.getRightClicked() instanceof ItemFrame))
-			return;
-
-		ItemStack item = ((ItemFrame) e.getRightClicked()).getItem();
-		if (item.getType() != Material.MAP)
-			return;
-
-		RenderableImageMap imageMap = MapManager.getRegisteredMap(item.getDurability());
-		if (imageMap == null)
-			return;
-		e.setCancelled(true);
-
-		if (!e.getPlayer().isOp())
-			return;
-
-		Player player = e.getPlayer();
-		if (player.getItemInHand().getType() != Material.STICK) {
-			player.sendMessage("Left cick on the image with a stick to remove.");
-			return;
-		}
-
-		imageMap.remove();
 	}
 
 	private static void updatePoint(Player player, Location newPoint, Location oldPoint, ItemStack displayBlock) {

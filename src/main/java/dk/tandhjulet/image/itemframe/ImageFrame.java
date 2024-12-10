@@ -37,39 +37,46 @@ public class ImageFrame extends EntityItemFrame {
 	public void setRotation(int i) {
 	}
 
-	// On damage always return false - map is immune
-	public boolean damageHandler(DamageSource source, float f) {
-		return false;
-	}
-
 	@Override
-	// Left click on map handler - flag is if item frame should drop aswell
-	public void a(Entity entity, boolean flag) {
+	// On damage/on left click
+	public boolean damageEntity(DamageSource source, float f) {
+		Entity entity = source.getEntity();
+
 		if (!(entity instanceof EntityHuman))
-			return;
+			return true;
 
 		CraftHumanEntity player = ((EntityHuman) entity).getBukkitEntity();
 		if (!player.isOp())
-			return;
+			return true;
 
 		if (player.getItemInHand().getType() != Material.STICK) {
 			player.sendMessage("Left click with a stick in hand to remove this image!");
-			return;
+			return true;
 		}
 
 		short data = (short) getItem().getData();
 		RenderableImageMap map = MapManager.getRegisteredMap(data);
 		if (map == null) {
 			player.sendMessage("Could not find image map at this location in memory... Please contact the developer.");
-			return;
+			return true;
 		}
 
 		map.remove();
+
+		return true;
+	}
+
+	@Override
+	// normally drops the item inside the frame and optionally (flag) the frame too.
+	public void a(Entity entity, boolean flag) {
+		return;
 	}
 
 	@Override
 	// Right click on map handler
 	public boolean e(EntityHuman human) {
+		CraftHumanEntity player = human.getBukkitEntity();
+		player.sendMessage("Left click with a stick in hand to remove this image!");
 		return true;
 	}
 
@@ -79,8 +86,5 @@ public class ImageFrame extends EntityItemFrame {
 		this.lastX = this.locX;
 		this.lastY = this.locY;
 		this.lastZ = this.locZ;
-
-		// Bukkit.getLogger().info("instance of craft image frame: " +
-		// (getBukkitEntity() instanceof CraftImageFrame));
 	}
 }

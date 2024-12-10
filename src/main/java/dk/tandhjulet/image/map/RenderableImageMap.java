@@ -67,9 +67,8 @@ public class RenderableImageMap {
 	@Getter
 	private List<Transformer> transforms = new ArrayList<>();
 
-	public static RenderableImageMap from(File imageFile, CuboidRegion region) throws IOException {
-		Direction direction = getFrameDirection(region, true);
-		return new RenderableImageMap(imageFile, region, direction);
+	public RenderableImageMap(File imageFile, CuboidRegion region) throws IOException {
+		this(imageFile, region, getFrameDirection(region, true));
 	}
 
 	public RenderableImageMap(File imageFile, CuboidRegion region, Direction frameDirection) throws IOException {
