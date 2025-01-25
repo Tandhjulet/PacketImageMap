@@ -105,6 +105,21 @@ public class RenderableImageMap {
 		applyAffineTransform(transform);
 	}
 
+	public void replace(File imageFile) throws IOException {
+		BufferedImage newImage = ImageIO.read(imageFile);
+		int imageWidth = newImage.getWidth();
+		int imageHeight = newImage.getHeight();
+		double mapsNeededX = Math.ceil((double) imageWidth / MAP_WIDTH);
+		double mapsNeededY = Math.ceil((double) imageHeight / MAP_HEIGHT);
+		if (height != mapsNeededY || width != mapsNeededX)
+			throw new IOException("Images are not the same map-size - cannot replace");
+
+		this.image = newImage;
+		this.imageFile = imageFile;
+		this.imagesSplit = false;
+		splitImages();
+	}
+
 	public void setMapIds(Short[] mapIds) {
 		for (Short mapId : this.mapIds) {
 			MapManager.unregisterMapId(mapId);
