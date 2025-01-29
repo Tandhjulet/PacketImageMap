@@ -259,14 +259,14 @@ public class RenderableImageMap {
 		return itemframePresent;
 	}
 
-	public boolean render(boolean createMaps, Runnable callback) {
+	public boolean render(Runnable callback) {
 		splitImages();
 		if (cutImages.length == 0)
 			return false;
 
 		final Collection<Entity> entities = region.getEntities();
 		if (entities.size() == 0)
-			return renderUnsafely(createMaps, callback, entities);
+			return renderUnsafely(callback, entities);
 
 		boolean itemframePresent = false;
 		for (Entity ent : entities) {
@@ -282,15 +282,15 @@ public class RenderableImageMap {
 		}
 
 		if (!itemframePresent)
-			return renderUnsafely(createMaps, callback, entities);
+			return renderUnsafely(callback, entities);
 
 		Bukkit.getScheduler().runTaskLater(PacketImage.getInstance(), () -> {
-			renderUnsafely(createMaps, callback, entities);
+			renderUnsafely(callback, entities);
 		}, 2L);
 		return true;
 	}
 
-	private boolean renderUnsafely(boolean createMaps, Runnable callback, Collection<Entity> entities) {
+	private boolean renderUnsafely(Runnable callback, Collection<Entity> entities) {
 		World world = region.getWorld();
 
 		try {
@@ -316,11 +316,9 @@ public class RenderableImageMap {
 					id = locHeight;
 				}
 
-				MapView view = null;
-				if (!createMaps) {
-					view = MapManager.getMapFromId(mapIds[id]);
-				}
-				if (createMaps || view == null) {
+				Short mapId = mapIds[id];
+				MapView view = mapId == null ? null : MapManager.getMapFromId(mapId);
+				if (view == null || mapId == null) {
 					view = Bukkit.createMap(world);
 					mapIds[id] = MapManager.getMapId(view);
 				}
@@ -342,7 +340,7 @@ public class RenderableImageMap {
 					item = frame.getItem();
 				}
 
-				if (createMaps || frame == null || item == null || item.getDurability() != mapIds[id]) {
+				if (frame == null || item == null || item.getDurability() != mapIds[id]) {
 					final ItemStack map = new ItemStack(Material.MAP);
 					map.setDurability(MapManager.getMapId(view));
 

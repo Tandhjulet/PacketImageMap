@@ -82,7 +82,7 @@ public class CommandSetMap implements CommandExecutor {
 		placement.getPos1().getBlock().setType(Material.AIR);
 		placement.getPos2().getBlock().setType(Material.AIR);
 
-		if (map.render(true, () -> {
+		if (map.render(() -> {
 			map.save();
 		})) {
 			player.sendMessage("Successfully placed image map.");

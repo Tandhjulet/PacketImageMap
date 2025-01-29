@@ -46,7 +46,7 @@ public class MapManager {
 										+ ")!");
 			}
 
-			image.render(false, null);
+			image.render(null);
 		}
 
 		Bukkit.getLogger().info("---- DONE RENDERING ----");

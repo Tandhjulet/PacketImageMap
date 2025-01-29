@@ -45,6 +45,10 @@ public class CuboidRegion {
 		this.axis = Axis.getAxisAlignment(this);
 	}
 
+	public boolean equals(CuboidRegion other) {
+		return (getMin() == other.getMin()) && (getMax() == other.getMax());
+	}
+
 	public void forEachLocation(Consumer<Location> consumer) {
 		for (int x = minX; x <= maxX; x++) {
 			for (int y = minY; y <= maxY; y++) {
