@@ -58,19 +58,19 @@ public class InteractListener implements Listener {
 			return;
 
 		CuboidRegion region = metadata.getRegion();
-		if (region.getWidth() == -1) {
+		if (region.get2DWidth() == -1) {
 			player.sendMessage("Your current selection is invalid.");
 			return;
 		}
 
 		ImageMap map = MapManager.getImageMaps().get(metadata.getImageFileName());
 		String ratioMessage = String.format(
-				"Selected: %dx%d - Image ratio: %dx%d.", region.getWidth(), region.getHeight(), map.getWidth(),
+				"Selected: %dx%d - Image ratio: %dx%d.", region.get2DWidth(), region.getHeight(), map.getWidth(),
 				map.getHeight());
 
-		if (map.hasSameDimensions(region.getWidth(), region.getHeight())) {
+		if (map.hasSameDimensions(region.get2DWidth(), region.getHeight())) {
 			ratioMessage += " Your image will not need to be scaled.";
-		} else if (map.canScaleCleanly(region.getWidth(), region.getHeight())) {
+		} else if (map.canScaleCleanly(region.get2DWidth(), region.getHeight())) {
 			ratioMessage += " Your image will scale cleanly.";
 		} else {
 			ratioMessage += " Your image will become distorted as the dimensions don't add up cleanly.";

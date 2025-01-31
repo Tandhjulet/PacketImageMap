@@ -80,18 +80,26 @@ public class CuboidRegion {
 	}
 
 	/**
-	 * Gets the width of the current selection.
+	 * Gets the two-dimensional width of the current selection.
 	 * 
 	 * @return width along x or z axis. if selection is not axis aligned, -1 is
 	 *         returned.
 	 */
-	public int getWidth() {
+	public int get2DWidth() {
 		int x = maxX - minX;
 		int z = maxZ - minZ;
 
 		if (x > 0 && z > 0)
 			return -1;
 		return x + z + 1;
+	}
+
+	public int getWidth() {
+		return maxX - minX + 1;
+	}
+
+	public int getDepth() {
+		return maxZ - minZ + 1;
 	}
 
 	public int getHeight() {
@@ -103,7 +111,7 @@ public class CuboidRegion {
 	}
 
 	public Collection<Entity> getEntities() {
-		int width = getWidth();
+		int width = get2DWidth();
 		int height = getHeight();
 
 		World world = pos1.getWorld();

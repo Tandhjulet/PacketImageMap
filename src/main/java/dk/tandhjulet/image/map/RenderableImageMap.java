@@ -81,13 +81,13 @@ public class RenderableImageMap {
 		origHeight = image.getHeight();
 
 		height = region.getHeight();
-		width = region.getWidth();
+		width = region.get2DWidth();
 		mapIds = new Short[height * width];
 
 		double mapsNeededX = Math.ceil((double) origWidth / MAP_WIDTH);
 		double mapsNeededY = Math.ceil((double) origHeight / MAP_HEIGHT);
 
-		double scaleX = region.getWidth() / mapsNeededX;
+		double scaleX = region.get2DWidth() / mapsNeededX;
 		double scaleY = region.getHeight() / mapsNeededY;
 
 		// Bukkit.getLogger().info("Maps needed " + mapsNeededX + " x " + mapsNeededY);
