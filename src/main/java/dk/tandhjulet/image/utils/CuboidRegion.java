@@ -45,8 +45,12 @@ public class CuboidRegion {
 		this.axis = Axis.getAxisAlignment(this);
 	}
 
-	public boolean equals(CuboidRegion other) {
-		return (getMin() == other.getMin()) && (getMax() == other.getMax());
+	@Override
+	public boolean equals(Object other) {
+		if (!(other instanceof CuboidRegion))
+			return false;
+		CuboidRegion otherRegion = (CuboidRegion) other;
+		return (getMin().equals(otherRegion.getMin())) && (getMax().equals(otherRegion.getMax()));
 	}
 
 	public void forEachLocation(Consumer<Location> consumer) {
