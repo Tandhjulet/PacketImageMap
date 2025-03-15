@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 
 import javax.annotation.Nullable;
@@ -64,6 +65,8 @@ public class RenderableImageMap {
 
 	private final @Getter Direction frameDirection;
 
+	private final @Getter HashSet<ImageRenderer> imageRenderers = new HashSet<>();
+
 	@Getter
 	private List<Transformer> transforms = new ArrayList<>();
 
@@ -103,6 +106,8 @@ public class RenderableImageMap {
 		transform.scale(scaleX, scaleY);
 
 		applyAffineTransform(transform);
+
+		MapManager.getRenderedMaps().add(this);
 	}
 
 	public void replace(File imageFile) throws IOException {
@@ -117,7 +122,12 @@ public class RenderableImageMap {
 		this.image = newImage;
 		this.imageFile = imageFile;
 		this.imagesSplit = false;
+
 		splitImages();
+
+		for (ImageRenderer renderer : imageRenderers) {
+			renderer.rendered = false;
+		}
 	}
 
 	public void setMapIds(Short[] mapIds) {
@@ -330,7 +340,7 @@ public class RenderableImageMap {
 						view.removeRenderer(renderer);
 					}
 
-					ImageRenderer imageRenderer = new ImageRenderer(id);
+					ImageRenderer imageRenderer = new ImageRenderer(id, view);
 					view.addRenderer(imageRenderer);
 				}
 
@@ -382,6 +392,8 @@ public class RenderableImageMap {
 			image.flush();
 		}
 
+		MapManager.getRenderedMaps().remove(this);
+
 		PacketImage.getImageConfig().getImages().remove(this);
 		PacketImage.getImageConfig().save();
 	}
@@ -432,12 +444,16 @@ public class RenderableImageMap {
 	}
 
 	public class ImageRenderer extends MapRenderer {
-		int cutImageIndex;
+		public boolean rendered = false;
+		@Getter
+		private final MapView view;
+		private final int cutImageIndex;
 
-		public ImageRenderer(int cutImageIndex) {
-			super();
-
+		public ImageRenderer(int cutImageIndex, MapView view) {
 			this.cutImageIndex = cutImageIndex;
+			this.view = view;
+
+			imageRenderers.add(this);
 		}
 
 		@Override
@@ -445,7 +461,11 @@ public class RenderableImageMap {
 			if (cutImages[cutImageIndex] == null)
 				return;
 
+			if (rendered)
+				return;
+
 			canvas.drawImage(0, 0, cutImages[cutImageIndex]);
+			rendered = true;
 		}
 	}
 }

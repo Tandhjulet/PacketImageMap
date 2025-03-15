@@ -3,6 +3,7 @@ package dk.tandhjulet.image.map;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import org.bukkit.Bukkit;
 import org.bukkit.map.MapView;
@@ -19,6 +20,9 @@ public class MapManager {
 	private static final HashMap<String, ImageMap> imageMaps = new HashMap<>();
 
 	private static final HashMap<Short, RenderableImageMap> mapIdToImageMap = new HashMap<>();
+
+	@Getter
+	private static final HashSet<RenderableImageMap> renderedMaps = new HashSet<>();
 
 	public static void load() throws IOException {
 		for (final File file : imageFolder.listFiles()) {
