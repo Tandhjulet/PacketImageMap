@@ -11,6 +11,7 @@ import dk.tandhjulet.image.config.ImageConfig;
 import dk.tandhjulet.image.config.serializers.DirectionSerializer;
 import dk.tandhjulet.image.config.serializers.ImageSerializer;
 import dk.tandhjulet.image.config.serializers.TransformerSerializer;
+import dk.tandhjulet.image.listeners.ConnectionListener;
 import dk.tandhjulet.image.listeners.InteractListener;
 import dk.tandhjulet.image.map.MapManager;
 import eu.okaeri.configs.ConfigManager;
@@ -43,6 +44,7 @@ public class PacketImage extends JavaPlugin {
 
 		CommandSetMap.register();
 		InteractListener.register();
+		ConnectionListener.register();
 
 		try {
 			MapManager.load();
@@ -50,5 +52,12 @@ public class PacketImage extends JavaPlugin {
 			Bukkit.getLogger().severe("Failed to load MapManager.");
 			e.printStackTrace();
 		}
+	}
+
+	@Override
+	public void onDisable() {
+		MapManager.getRenderedMaps().forEach((map) -> {
+			map.removeFrames();
+		});
 	}
 }

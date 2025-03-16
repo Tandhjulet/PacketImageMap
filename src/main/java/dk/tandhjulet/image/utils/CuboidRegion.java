@@ -133,4 +133,8 @@ public class CuboidRegion {
 		}
 		return entities;
 	}
+
+	public String toString() {
+		return "{min:{" + min + "},max:{" + max + "}";
+	}
 }

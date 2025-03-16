@@ -3,16 +3,21 @@ package dk.tandhjulet.image.listeners;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
 import dk.tandhjulet.image.PacketImage;
 import dk.tandhjulet.image.map.ImageMap;
 import dk.tandhjulet.image.map.MapManager;
+import dk.tandhjulet.image.map.RenderableImageMap;
 import dk.tandhjulet.image.objects.PlacementMetadata;
 import dk.tandhjulet.image.utils.BlockUtils;
 import dk.tandhjulet.image.utils.CuboidRegion;
@@ -20,12 +25,45 @@ import dk.tandhjulet.image.utils.LocationUtils;
 
 public class InteractListener implements Listener {
 
-	//
-	// Looking for the code handling left and right click on item frames?
-	// To best circumvent any other plugin having the final say in what happens to
-	// the map, the code has been moved directly to this plugins own NMS
-	// (ImageFrame.java) implementation of item frames.
-	//
+	@EventHandler
+	public void onEntityDamageByEntity(EntityDamageByEntityEvent e) {
+		Entity victim = e.getEntity();
+		Entity attacker = e.getDamager();
+		if (!(attacker instanceof Player))
+			return;
+
+		e.setCancelled(handleMapInteract((Player) attacker, victim));
+	}
+
+	@EventHandler
+	public void onInteractAtEntity(PlayerInteractEntityEvent e) {
+		Player player = e.getPlayer();
+		Entity rightClicked = e.getRightClicked();
+
+		e.setCancelled(handleMapInteract(player, rightClicked));
+	}
+
+	private boolean handleMapInteract(Player player, Entity frame) {
+		if (!(frame instanceof ItemFrame))
+			return false;
+
+		ItemFrame itemFrame = (ItemFrame) frame;
+		ItemStack item = itemFrame.getItem();
+		if (item == null || item.getType() != Material.MAP)
+			return false;
+
+		RenderableImageMap map = MapManager.getRegisteredMap(item.getDurability());
+		if (map == null)
+			return false;
+
+		if (!player.isOp())
+			return true;
+		else if (player.getItemInHand().getType() != Material.STICK)
+			player.sendMessage("To remove the map please right click with a stick");
+		else
+			map.remove();
+		return true;
+	}
 
 	@EventHandler
 	public void onInteract(PlayerInteractEvent e) {

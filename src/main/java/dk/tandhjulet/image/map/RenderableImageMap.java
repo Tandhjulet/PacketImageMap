@@ -23,6 +23,7 @@ import org.bukkit.craftbukkit.v1_8_R3.CraftWorld;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.Player;
+import org.bukkit.event.entity.CreatureSpawnEvent.SpawnReason;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapRenderer;
@@ -66,6 +67,7 @@ public class RenderableImageMap {
 	private final @Getter Direction frameDirection;
 
 	private final @Getter HashSet<ImageRenderer> imageRenderers = new HashSet<>();
+	private final @Getter HashSet<Player> sentTo = new HashSet<>();
 
 	@Getter
 	private List<Transformer> transforms = new ArrayList<>();
@@ -108,6 +110,17 @@ public class RenderableImageMap {
 		applyAffineTransform(transform);
 
 		MapManager.getRenderedMaps().add(this);
+	}
+
+	public void send(Player player) {
+		if (sentTo.contains(player))
+			return;
+
+		for (ImageRenderer renderer : imageRenderers) {
+			player.sendMap(renderer.getView());
+		}
+
+		sentTo.add(player);
 	}
 
 	public void replace(File imageFile) throws IOException {
@@ -355,13 +368,19 @@ public class RenderableImageMap {
 					map.setDurability(MapManager.getMapId(view));
 
 					if (frame == null) {
-						ImageFrame nmsItemFrame = new ImageFrame(((CraftWorld) region.getWorld()).getHandle(),
+						ImageFrame itemFrame = new ImageFrame(((CraftWorld) region.getWorld()).getHandle(),
 								LocationUtils.toBlockPosition(loc), frameDirection.getNmsDirection());
+						if (!loc.getChunk().isLoaded())
+							loc.getChunk().load();
 
-						frame = new CraftImageFrame((CraftServer) Bukkit.getServer(), nmsItemFrame);
+						itemFrame.setBukkitEntity(new CraftImageFrame((CraftServer) Bukkit.getServer(), itemFrame));
 
-						// frame = (ItemFrame) world.spawnEntity(region, EntityType.ITEM_FRAME);
+						frame = ((CraftWorld) world).addEntity(itemFrame, SpawnReason.CUSTOM);
+
+						// frame = (ItemFrame) world.spawnEntity(loc, EntityType.ITEM_FRAME);
 					}
+					if (frame.getItem() == null || frame.getItem().getType() != Material.MAP)
+						frame.setItem(null);
 					frame.setItem(map);
 					frame.setFacingDirection(frameDirection.getBlockFace());
 				}
@@ -380,19 +399,23 @@ public class RenderableImageMap {
 		return true;
 	}
 
-	public void remove() {
-		MapManager.unregisterRegion(this);
-
+	public void removeFrames() {
 		region.getEntities().forEach((entity) -> {
 			if (entity instanceof CraftImageFrame)
 				((CraftImageFrame) entity).removeFrame();
 		});
+	}
+
+	public void remove() {
+		MapManager.unregisterRegion(this);
+
+		removeFrames();
 
 		for (BufferedImage image : cutImages) {
 			image.flush();
 		}
 
-		MapManager.getRenderedMaps().remove(this);
+		// MapManager.getRenderedMaps().remove(this);
 
 		PacketImage.getImageConfig().getImages().remove(this);
 		PacketImage.getImageConfig().save();

@@ -21,7 +21,6 @@ public class CraftImageFrame extends CraftItemFrame {
 
 	public CraftImageFrame(CraftServer server, ImageFrame entity) {
 		super(server, entity);
-		entity.setBukkitEntity(this);
 	}
 
 	@Override

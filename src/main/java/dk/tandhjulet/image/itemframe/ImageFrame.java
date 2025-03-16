@@ -35,10 +35,6 @@ public class ImageFrame extends EntityItemFrame {
 	}
 
 	@Override
-	public void setRotation(int i) {
-	}
-
-	@Override
 	// On damage/on left click
 	public boolean damageEntity(DamageSource source, float f) {
 		handleClick(source.getEntity(), ClickType.LEFT);
